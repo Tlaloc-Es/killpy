@@ -1,6 +1,6 @@
 [project]
 name = "KillPy"
-version = "0.1.0-alpha.1"
+version = "0.1.0"
 description = "Clean your .venv and __pycache__ directories"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -23,6 +23,14 @@ dev = [
 
 [tool.uv.workspace]
 members = ["q"]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version = "0.1.0"
+version_files = [
+    "src/__version__.py",
+    "pyproject.toml:version"
+]
 
 [project.scripts]
 posewebcam = "pykill.__main__:main"
