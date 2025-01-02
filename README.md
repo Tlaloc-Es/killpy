@@ -1,3 +1,10 @@
+<div align="center">
+
+[![Downloads](https://static.pepy.tech/personalized-badge/KillPy?period=month&units=international_system&left_color=grey&right_color=blue&left_text=PyPi%20Downloads)](https://pepy.tech/project/KillPy)
+[![Stars](https://img.shields.io/github/stars/Tlaloc-Es/KillPy?color=yellow&style=flat)](https://github.com/Tlaloc-Es/KillPy/stargazers)
+
+</div>
+
 ```plaintext
 ▗▖ ▗▖▄ █ █ ▗▄▄▖ ▄   ▄              ____
 ▐▌▗▞▘▄ █ █ ▐▌ ▐▌█   █           .'`_ o `;__,
@@ -5,13 +12,12 @@
 ▐▌ ▐▌█ █ █ ▐▌   ▄   █  .`-...-'.'
                  ▀▀▀    `-...-' A tool to delete .venv directories
 ```
-
 <div align="center">
 
-[![Downloads](https://static.pepy.tech/personalized-badge/KillPy?period=month&units=international_system&left_color=grey&right_color=blue&left_text=PyPi%20Downloads)](https://pepy.tech/project/KillPy)
-[![Stars](https://img.shields.io/github/stars/Tlaloc-Es/KillPy?color=yellow&style=flat)](https://github.com/Tlaloc-Es/KillPy/stargazers)
+![KillPy in action](show.gif)
 
 </div>
+
 
 # Delete .venv Directories
 
