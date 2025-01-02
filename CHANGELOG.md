@@ -1,3 +1,10 @@
+## 0.1.5 (2025-01-02)
+
+### Refactor
+
+- reorganize imports and update deleted_cells type annotation in TableApp
+- improve find_venvs and get_total_size functions for better performance and readability
+
 ## 0.1.4 (2025-01-02)
 
 ### Fix
