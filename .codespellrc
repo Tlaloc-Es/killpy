@@ -1,2 +1,2 @@
 [codespell]
-exclude-file=poetry.lock
+exclude-file=uv.lock
