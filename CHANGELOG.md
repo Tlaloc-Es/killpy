@@ -1,3 +1,9 @@
+## 0.1.7 (2025-01-02)
+
+### Fix
+
+- add a banner to TableApp for enhanced user interface
+
 ## 0.1.6 (2025-01-02)
 
 ### Fix
