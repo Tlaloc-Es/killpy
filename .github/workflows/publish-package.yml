@@ -17,12 +17,12 @@ jobs:
         with:
           submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
       - name: "build"
         env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         id: build
         run: |
-          curl -sSL https://install.python-poetry.org | python3 -
-          poetry build
-          poetry config pypi-token.pypi "$POETRY_PYPI_TOKEN_PYPI"
-          poetry publish
+          uv build
+          uv publish
