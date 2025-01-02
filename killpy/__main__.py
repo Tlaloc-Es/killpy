@@ -1,9 +1,10 @@
-import os
-from textual.app import App, ComposeResult
-from textual.widgets import DataTable, Header
-import time
 import shutil
+import time
 from pathlib import Path
+
+from textual.app import App, ComposeResult
+from textual.coordinate import Coordinate
+from textual.widgets import DataTable, Header
 
 
 def get_total_size(path: Path) -> int:
@@ -35,8 +36,7 @@ def find_venvs(base_directory: Path):
 
 
 class TableApp(App):
-
-    deleted_cells = []
+    deleted_cells: Coordinate = []
 
     def compose(self) -> ComposeResult:
         yield Header()
