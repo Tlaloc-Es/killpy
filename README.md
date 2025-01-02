@@ -39,13 +39,6 @@ Run the following command to search and delete `.venv` directories:
 killpy
 ```
 
-- Replace `<path>` with the directory where you want to search for `.venv` folders.
-- Example:
-
-```bash
-killpy ./my-projects
-```
-
 ## Contributing
 
 Contributions are welcome! If you'd like to improve this tool, feel free to fork the repository and submit a pull request.
