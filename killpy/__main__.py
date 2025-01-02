@@ -3,8 +3,9 @@ import time
 from pathlib import Path
 
 from textual.app import App, ComposeResult
+from textual.binding import Binding
 from textual.coordinate import Coordinate
-from textual.widgets import DataTable, Header
+from textual.widgets import DataTable, Footer, Header, Label
 
 
 def get_total_size(path: Path) -> int:
@@ -29,18 +30,32 @@ def find_venvs(base_directory: Path):
         last_modified = int(
             round((time.time() - dir_path.stat().st_mtime) / (24 * 3600))
         )
-        size = format_size(get_total_size(dir_path))
-        venvs.append((dir_path, last_modified, size))
+        size = get_total_size(dir_path)
+        size_to_show = format_size(size)
+        venvs.append((dir_path, last_modified, size, size_to_show))
+        venvs.sort(key=lambda x: x[2], reverse=True)
 
     return venvs
 
 
 class TableApp(App):
     deleted_cells: Coordinate = []
+    bytes_release: int = 0
+    BINDINGS = [
+        Binding(key="ctrl+q", action="quit", description="Quit the app"),
+        Binding(
+            key="ctrl+m",
+            action="enter",
+            description="Delete the .venv selected",
+            show=True,
+        ),
+    ]
 
     def compose(self) -> ComposeResult:
         yield Header()
+        yield Label("Finding .venv directories...")
         yield DataTable()
+        yield Footer()
 
     def on_mount(self) -> None:
         self.title = """KillPy"""
@@ -50,11 +65,12 @@ class TableApp(App):
         venvs = find_venvs(current_directory)
         table = self.query_one(DataTable)
         table.focus()
-        table.add_columns("Path", "Last Modified", "Size")
+        table.add_columns("Path", "Last Modified", "Size", "Size (Human Readable)")
         for venv in venvs:
             table.add_row(*venv)
         table.cursor_type = "row"
         table.zebra_stripes = True
+        self.query_one(Label).update(f"Found {len(venvs)} .venv directories")
 
     def on_key(self, event):
         if event.key == "enter":
@@ -65,8 +81,12 @@ class TableApp(App):
                     return event
                 row_data = table.get_row_at(cursor_cell.row)
                 path = row_data[0]
+                self.bytes_release += row_data[2]
                 shutil.rmtree(path)
-                table.update_cell_at(cursor_cell, f"DELETED {row_data[0]}")
+                table.update_cell_at(cursor_cell, f"DELETED {path}")
+                self.query_one(Label).update(
+                    f"{format_size(self.bytes_release)} deleted"
+                )
                 self.deleted_cells.append(cursor_cell)
             self.bell()
         return event
