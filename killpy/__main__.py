@@ -5,7 +5,7 @@ from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.coordinate import Coordinate
-from textual.widgets import DataTable, Footer, Header, Label
+from textual.widgets import DataTable, Footer, Header, Label, Static
 
 
 def get_total_size(path: Path) -> int:
@@ -51,8 +51,26 @@ class TableApp(App):
         ),
     ]
 
+    CSS = """
+    #banner {
+        color: white;
+        border: heavy green;
+    }
+    """
+
     def compose(self) -> ComposeResult:
         yield Header()
+        banner = Static(
+            """
+▗▖ ▗▖▄ █ █ ▗▄▄▖ ▄   ▄              ____
+▐▌▗▞▘▄ █ █ ▐▌ ▐▌█   █           .'`_ o `;__,
+▐▛▚▖ █ █ █ ▐▛▀▘  ▀▀▀█ .       .'.'` '---'  '
+▐▌ ▐▌█ █ █ ▐▌   ▄   █  .`-...-'.'
+                 ▀▀▀    `-...-' A tool to delete .venv directories
+        """,
+            id="banner",
+        )
+        yield banner
         yield Label("Finding .venv directories...")
         yield DataTable()
         yield Footer()
