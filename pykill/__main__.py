@@ -2,6 +2,7 @@ import os
 from textual.app import App, ComposeResult
 from textual.widgets import DataTable, Header
 import time
+import shutil
 
 
 def get_folder_size(folder_path):
@@ -28,7 +29,8 @@ def find_venvs(base_directory="."):
     venvs = []
 
     for root, dirs, files in os.walk(base_directory):
-        for dir_name in dirs:
+        dirs_copy = dirs[:]
+        for dir_name in dirs_copy:
             if dir_name.startswith(".venv"):
                 venv_path = os.path.join(root, dir_name)
                 last_modified = int(
@@ -36,11 +38,15 @@ def find_venvs(base_directory="."):
                 )
                 size = format_size(get_folder_size(venv_path))
                 venvs.append((venv_path, last_modified, size))
+                dirs.remove(dir_name)
 
     return venvs
 
 
 class TableApp(App):
+
+    deleted_cells = []
+
     def compose(self) -> ComposeResult:
         yield Header()
         yield DataTable()
@@ -64,10 +70,13 @@ class TableApp(App):
             table = self.query_one(DataTable)
             cursor_cell = table.cursor_coordinate
             if cursor_cell:
+                if cursor_cell in self.deleted_cells:
+                    return event
                 row_data = table.get_row_at(cursor_cell.row)
-
+                path = row_data[0]
+                shutil.rmtree(path)
                 table.update_cell_at(cursor_cell, f"DELETED {row_data[0]}")
-
+                self.deleted_cells.append(cursor_cell)
             self.bell()
         return event
 
