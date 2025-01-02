@@ -1,3 +1,9 @@
+## 0.1.6 (2025-01-02)
+
+### Fix
+
+- enhance TableApp with improved venv display and deletion feedback
+
 ## 0.1.5 (2025-01-02)
 
 ### Refactor
