@@ -33,4 +33,4 @@ version_files = [
 ]
 
 [project.scripts]
-posewebcam = "pykill.__main__:main"
+pykill = "pykill.__main__:main"
