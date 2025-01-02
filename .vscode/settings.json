@@ -1,0 +1,17 @@
+{
+    "files.exclude": {
+        "**/.venv": true,
+        "**/__pycache__": true,
+        "**/.pytest_cache": true,
+        "**/.ipynb_checkpoints":true,
+        "**/**.egg-info":true,
+        "**/build":true,
+        "**/.ruff_cache":true,
+        "**/.mypy_cache":true
+    },
+    "[python]":{
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true
+    },
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+}

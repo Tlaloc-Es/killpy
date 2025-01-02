@@ -1,0 +1,28 @@
+name: Build and publish python package
+
+on:
+  workflow_run:
+    workflows: ["Bump version"]
+    types:
+      - completed
+
+jobs:
+  publish-service-client-package:
+    runs-on: ubuntu-latest
+    name: "Publish package at PyPi"
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: "build"
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
+        id: build
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          poetry build
+          poetry config pypi-token.pypi "$POETRY_PYPI_TOKEN_PYPI"
+          poetry publish

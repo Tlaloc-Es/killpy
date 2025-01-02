@@ -1,0 +1,28 @@
+[project]
+name = "KillPy"
+version = "0.1.0-alpha.1"
+description = "Clean your .venv and __pycache__ directories"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1.8",
+    "textual>=1.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "commitizen>=4.1.0",
+    "coverage>=7.6.10",
+    "mypy>=1.14.0",
+    "pre-commit>=4.0.1",
+    "pytest>=8.3.4",
+    "pytest-cov>=6.0.0",
+    "ruff>=0.8.4",
+]
+
+
+[tool.uv.workspace]
+members = ["q"]
+
+[project.scripts]
+posewebcam = "pykill.__main__:main"
