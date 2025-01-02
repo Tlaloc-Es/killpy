@@ -3,18 +3,15 @@ from textual.app import App, ComposeResult
 from textual.widgets import DataTable, Header
 import time
 import shutil
+from pathlib import Path
 
 
-def get_folder_size(folder_path):
-    total_size = 0
-    for dirpath, dirnames, filenames in os.walk(folder_path):
-        for filename in filenames:
-            file_path = os.path.join(dirpath, filename)
-            total_size += os.path.getsize(file_path)
+def get_total_size(path: Path) -> int:
+    total_size = sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
     return total_size
 
 
-def format_size(size_in_bytes):
+def format_size(size_in_bytes: int):
     if size_in_bytes >= 1 << 30:
         return f"{size_in_bytes / (1 << 30):.2f} GB"
     elif size_in_bytes >= 1 << 20:
@@ -25,20 +22,14 @@ def format_size(size_in_bytes):
         return f"{size_in_bytes} bytes"
 
 
-def find_venvs(base_directory="."):
+def find_venvs(base_directory: Path):
     venvs = []
-
-    for root, dirs, files in os.walk(base_directory):
-        dirs_copy = dirs[:]
-        for dir_name in dirs_copy:
-            if dir_name.startswith(".venv"):
-                venv_path = os.path.join(root, dir_name)
-                last_modified = int(
-                    round((time.time() - os.path.getmtime(venv_path)) / (24 * 3600))
-                )
-                size = format_size(get_folder_size(venv_path))
-                venvs.append((venv_path, last_modified, size))
-                dirs.remove(dir_name)
+    for dir_path in base_directory.rglob(".venv"):
+        last_modified = int(
+            round((time.time() - dir_path.stat().st_mtime) / (24 * 3600))
+        )
+        size = format_size(get_total_size(dir_path))
+        venvs.append((dir_path, last_modified, size))
 
     return venvs
 
@@ -54,7 +45,7 @@ class TableApp(App):
     def on_mount(self) -> None:
         self.title = """KillPy"""
 
-        current_directory = os.getcwd()
+        current_directory = Path.cwd()
 
         venvs = find_venvs(current_directory)
         table = self.query_one(DataTable)
