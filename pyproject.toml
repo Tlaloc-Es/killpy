@@ -1,7 +1,7 @@
 [project]
 name = "KillPy"
 version = "0.2.0"
-description = "Clean your .venv and __pycache__ directories"
+description = "List all .venv directories and Conda environments 🐍 on your system and check how much space they are using. You can then choose which ones to delete in order to free up space 🧹."
 readme = "README.md"
 classifiers = [
   "Environment :: Console",
