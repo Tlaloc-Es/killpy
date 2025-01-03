@@ -1,5 +1,6 @@
 import shutil
-import time
+import subprocess
+from datetime import datetime
 from pathlib import Path
 
 from textual.app import App, ComposeResult
@@ -27,15 +28,62 @@ def format_size(size_in_bytes: int):
 def find_venvs(base_directory: Path):
     venvs = []
     for dir_path in base_directory.rglob(".venv"):
-        last_modified = int(
-            round((time.time() - dir_path.stat().st_mtime) / (24 * 3600))
+        last_modified_timestamp = dir_path.stat().st_mtime
+        last_modified = datetime.fromtimestamp(last_modified_timestamp).strftime(
+            "%d/%m/%Y"
         )
         size = get_total_size(dir_path)
         size_to_show = format_size(size)
-        venvs.append((dir_path, last_modified, size, size_to_show))
+        venvs.append((dir_path, ".venv", last_modified, size, size_to_show))
         venvs.sort(key=lambda x: x[2], reverse=True)
 
     return venvs
+
+
+def remove_conda_env(env_name):
+    try:
+        subprocess.run(
+            ["conda", "env", "remove", "-n", env_name],
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
+
+
+def list_conda_environments():
+    try:
+        result = subprocess.run(
+            ["conda", "env", "list"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        venvs = []
+        for line in result.stdout.splitlines():
+            if line.strip() and not line.startswith("#"):
+                env_info = line.strip().split()
+                env_name = env_info[0]
+
+                if "*" in env_info:
+                    continue
+
+                dir_path = Path(env_info[1])
+                last_modified_timestamp = dir_path.stat().st_mtime
+                last_modified = datetime.fromtimestamp(
+                    last_modified_timestamp
+                ).strftime("%d/%m/%Y")
+
+                size = get_total_size(dir_path)
+                size_to_show = format_size(size)
+                venvs.append((env_name, "Conda", last_modified, size, size_to_show))
+
+        venvs.sort(key=lambda x: x[3], reverse=True)
+        return venvs
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error: {e}")
+        return []
 
 
 class TableApp(App):
@@ -81,9 +129,12 @@ class TableApp(App):
         current_directory = Path.cwd()
 
         venvs = find_venvs(current_directory)
+        venvs += list_conda_environments()
         table = self.query_one(DataTable)
         table.focus()
-        table.add_columns("Path", "Last Modified", "Size", "Size (Human Readable)")
+        table.add_columns(
+            "Path", "Type", "Last Modified", "Size", "Size (Human Readable)"
+        )
         for venv in venvs:
             table.add_row(*venv)
         table.cursor_type = "row"
@@ -99,8 +150,12 @@ class TableApp(App):
                     return event
                 row_data = table.get_row_at(cursor_cell.row)
                 path = row_data[0]
-                self.bytes_release += row_data[2]
-                shutil.rmtree(path)
+                self.bytes_release += row_data[3]
+                env_type = row_data[1]
+                if env_type == ".venv":
+                    shutil.rmtree(path)
+                else:
+                    remove_conda_env(path)
                 table.update_cell_at(cursor_cell, f"DELETED {path}")
                 self.query_one(Label).update(
                     f"{format_size(self.bytes_release)} deleted"
