@@ -1,3 +1,9 @@
+## 0.2.2 (2025-01-03)
+
+### Fix
+
+- change key binding from 'ctrl+m' to 'space' for deleting .venv close #5
+
 ## 0.2.1 (2025-01-03)
 
 ### Fix
