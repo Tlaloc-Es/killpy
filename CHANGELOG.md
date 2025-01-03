@@ -1,3 +1,9 @@
+## 0.2.1 (2025-01-03)
+
+### Fix
+
+- fails if conda is not installed #3
+
 ## 0.2.0 (2025-01-03)
 
 ### Feat
