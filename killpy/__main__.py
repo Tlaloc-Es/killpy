@@ -40,6 +40,22 @@ def find_venvs(base_directory: Path):
     return venvs
 
 
+def find_venvs_with_pyvenv(base_directory: Path):
+    venvs = []
+    for dir_path in base_directory.rglob("pyvenv.cfg"):
+        venv_dir = dir_path.parent
+        last_modified_timestamp = dir_path.stat().st_mtime
+        last_modified = datetime.fromtimestamp(last_modified_timestamp).strftime(
+            "%d/%m/%Y"
+        )
+        size = get_total_size(venv_dir)
+        size_to_show = format_size(size)
+        venvs.append((venv_dir, "pyvenv.cfg", last_modified, size, size_to_show))
+
+    venvs.sort(key=lambda x: x[2], reverse=True)
+    return venvs
+
+
 def remove_conda_env(env_name):
     try:
         subprocess.run(
@@ -87,6 +103,19 @@ def list_conda_environments():
         return []
 
 
+def remove_duplicates(venvs):
+    seen_paths = set()
+    unique_venvs = []
+
+    for venv in venvs:
+        venv_path = venv[0]
+        if venv_path not in seen_paths:
+            unique_venvs.append(venv)
+            seen_paths.add(venv_path)
+
+    return unique_venvs
+
+
 class TableApp(App):
     deleted_cells: Coordinate = []
     bytes_release: int = 0
@@ -131,6 +160,8 @@ class TableApp(App):
 
         venvs = find_venvs(current_directory)
         venvs += list_conda_environments()
+        venvs += find_venvs_with_pyvenv(current_directory)
+        venvs = remove_duplicates(venvs)
         table = self.query_one(DataTable)
         table.focus()
         table.add_columns(
