@@ -1,3 +1,9 @@
+## 0.4.0 (2025-01-03)
+
+### Feat
+
+- implement asynchronous searching for virtual environments close #2
+
 ## 0.3.0 (2025-01-03)
 
 ### Feat
