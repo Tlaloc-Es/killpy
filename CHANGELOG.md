@@ -1,3 +1,9 @@
+## 0.2.0 (2025-01-03)
+
+### Feat
+
+- add support for listing and removing Conda environments in the app
+
 ## 0.1.7 (2025-01-02)
 
 ### Fix
