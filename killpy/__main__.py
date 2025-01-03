@@ -1,3 +1,4 @@
+import asyncio
 import shutil
 import subprocess
 from datetime import datetime
@@ -149,28 +150,37 @@ class TableApp(App):
             id="banner",
         )
         yield banner
-        yield Label("Finding .venv directories...")
+        yield Label("Searching for virtual environments...")
         yield DataTable()
         yield Footer()
 
-    def on_mount(self) -> None:
+    async def on_mount(self) -> None:
         self.title = """KillPy"""
+        await self.find_venvs()
 
+    async def find_venvs(self):
         current_directory = Path.cwd()
 
-        venvs = find_venvs(current_directory)
-        venvs += list_conda_environments()
-        venvs += find_venvs_with_pyvenv(current_directory)
+        venvs = await asyncio.gather(
+            asyncio.to_thread(find_venvs, current_directory),
+            asyncio.to_thread(list_conda_environments),
+            asyncio.to_thread(find_venvs_with_pyvenv, current_directory),
+        )
+        venvs = [env for sublist in venvs for env in sublist]
         venvs = remove_duplicates(venvs)
+
         table = self.query_one(DataTable)
         table.focus()
         table.add_columns(
             "Path", "Type", "Last Modified", "Size", "Size (Human Readable)"
         )
+
         for venv in venvs:
             table.add_row(*venv)
+
         table.cursor_type = "row"
         table.zebra_stripes = True
+
         self.query_one(Label).update(f"Found {len(venvs)} .venv directories")
 
     def on_key(self, event):
