@@ -81,8 +81,9 @@ def list_conda_environments():
         venvs.sort(key=lambda x: x[3], reverse=True)
         return venvs
 
-    except subprocess.CalledProcessError as e:
-        print(f"Error: {e}")
+    except subprocess.CalledProcessError:
+        return []
+    except Exception:
         return []
 
 
