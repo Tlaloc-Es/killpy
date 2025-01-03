@@ -25,8 +25,8 @@
 
 ## Features
 
-- **Automatic search:** Finds all `.venv` directories recursively within a specified path.
-- **Support to Conda:** Lists all Conda envs.
+- **Automatic search:** Finds all .venv directories and any folders containing a pyvenv.cfg file recursively from the current working directory, as they are considered virtual environment folders.
+- **Support for Conda**: Lists all available Conda environments.
 - **Safe deletion:** Lists the directories to be deleted and asks for confirmation.
 - **Fast and lightweight:** Minimal dependencies for quick execution.
 
@@ -40,11 +40,23 @@ pip install KillPy
 
 ## Usage
 
-Run the following command to search and delete .venv directories and list Conda environments from the current directory and all its subdirectories recursively:
+Run the following command to search for `.venv` directories and any folders containing a `pyvenv.cfg` file, as well as to list all `Conda environments` from the current directory and all its subdirectories recursively:
 
 ```bash
 killpy
 ```
+
+- To **close the application**, press `Ctrl+Q`.
+- To **delete a virtual environment**, press `Space` (afte selecting the environment you want to delete).
+
+## Roadmap
+
+- [ ] Delete `__pycache__` Files
+- [ ] Remove `dist` Folders and Build Artifacts
+- [ ] Clean Up Installed Package Cache
+- [ ] Delete `.egg-info` and `.dist-info` Files
+- [ ] Analyze and Remove Unused Dependencies
+- [ ] Optimize Disk Space in Python Projects
 
 ## Contributing
 
