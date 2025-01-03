@@ -1,3 +1,13 @@
+## 0.3.0 (2025-01-03)
+
+### Feat
+
+- add support for finding virtual environments with pyvenv and remove duplicates
+
+### Fix
+
+- remove click dependency and update package version to 0.2.1
+
 ## 0.2.2 (2025-01-03)
 
 ### Fix
