@@ -10,22 +10,23 @@
 ▐▌▗▞▘▄ █ █ ▐▌ ▐▌█   █           .'`_ o `;__,
 ▐▛▚▖ █ █ █ ▐▛▀▘  ▀▀▀█ .       .'.'` '---'  '
 ▐▌ ▐▌█ █ █ ▐▌   ▄   █  .`-...-'.'
-                 ▀▀▀    `-...-' A tool to delete .venv directories
+                 ▀▀▀    `-...-' A tool to delete .venv directories and Conda envs
 ```
+
 <div align="center">
 
 ![KillPy in action](show.gif)
 
 </div>
 
-
 # Delete .venv Directories
 
-`KillPy` is a simple tool designed to locate and delete `.venv` directories from your projects. It can help you quickly clean up unnecessary virtual environments and save disk space.
+`KillPy` is a simple tool designed to locate and delete `.venv` directories from your projects (and Conda envs too). It can help you quickly clean up unnecessary virtual environments and save disk space.
 
 ## Features
 
 - **Automatic search:** Finds all `.venv` directories recursively within a specified path.
+- **Support to Conda:** Lists all Conda envs.
 - **Safe deletion:** Lists the directories to be deleted and asks for confirmation.
 - **Fast and lightweight:** Minimal dependencies for quick execution.
 

@@ -114,7 +114,7 @@ class TableApp(App):
 ▐▌▗▞▘▄ █ █ ▐▌ ▐▌█   █           .'`_ o `;__,
 ▐▛▚▖ █ █ █ ▐▛▀▘  ▀▀▀█ .       .'.'` '---'  '
 ▐▌ ▐▌█ █ █ ▐▌   ▄   █  .`-...-'.'
-                 ▀▀▀    `-...-' A tool to delete .venv directories
+                 ▀▀▀    `-...-' A tool to delete .venv directories and Conda envs
         """,
             id="banner",
         )
