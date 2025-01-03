@@ -93,8 +93,8 @@ class TableApp(App):
     BINDINGS = [
         Binding(key="ctrl+q", action="quit", description="Quit the app"),
         Binding(
-            key="ctrl+m",
-            action="enter",
+            key="space",
+            action="Delete",
             description="Delete the .venv selected",
             show=True,
         ),
@@ -143,7 +143,7 @@ class TableApp(App):
         self.query_one(Label).update(f"Found {len(venvs)} .venv directories")
 
     def on_key(self, event):
-        if event.key == "enter":
+        if event.key == "space":
             table = self.query_one(DataTable)
             cursor_cell = table.cursor_coordinate
             if cursor_cell:
