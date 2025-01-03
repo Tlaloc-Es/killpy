@@ -40,7 +40,7 @@ pip install KillPy
 
 ## Usage
 
-Run the following command to search and delete `.venv` directories:
+Run the following command to search and delete .venv directories and list Conda environments from the current directory and all its subdirectories recursively:
 
 ```bash
 killpy
