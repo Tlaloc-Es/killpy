@@ -1,3 +1,9 @@
+## 0.8.1 (2025-01-05)
+
+### Fix
+
+- consolidate environment handling functions into __main__.py and remove envs_handler.py
+
 ## 0.8.0 (2025-01-05)
 
 ### Feat
