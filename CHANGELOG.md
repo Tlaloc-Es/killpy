@@ -1,3 +1,9 @@
+## 0.8.3 (2025-01-05)
+
+### Fix
+
+- handle FileNotFoundError in get_total_size and find_venvs functions close #4
+
 ## 0.8.2 (2025-01-05)
 
 ### Fix
