@@ -1,3 +1,9 @@
+## 0.7.0 (2025-01-05)
+
+### Feat
+
+- replace 'KillPy' with 'killpy' in workflow and pyproject.toml
+
 ## 0.6.0 (2025-01-05)
 
 ### Feat
