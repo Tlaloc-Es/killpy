@@ -11,6 +11,17 @@ from textual.coordinate import Coordinate
 from textual.widgets import DataTable, Footer, Header, Label, Static
 
 
+def remove_pycache(path: Path) -> int:
+    total_freed_space = 0
+    for pycache_dir in path.rglob("__pycache__"):
+        try:
+            total_freed_space += get_total_size(pycache_dir)
+            shutil.rmtree(pycache_dir)
+        except Exception:
+            continue
+    return total_freed_space
+
+
 def remove_duplicates(venvs):
     seen_paths = set()
     unique_venvs = []
@@ -156,6 +167,12 @@ class TableApp(App):
             description="Delete the selected .venv immediately",
             show=True,
         ),
+        Binding(
+            key="p",
+            action="clean_pycache",
+            description="Clean __pycache__ directories recursively",
+            show=True,
+        ),
     ]
 
     CSS = """
@@ -210,6 +227,13 @@ class TableApp(App):
         table.zebra_stripes = True
 
         self.query_one(Label).update(f"Found {len(venvs)} .venv directories")
+
+    async def action_clean_pycache(self):
+        current_directory = Path.cwd()
+        total_freed_space = await asyncio.to_thread(remove_pycache, current_directory)
+        self.bytes_release += total_freed_space
+        self.query_one(Label).update(f"{format_size(self.bytes_release)} deleted")
+        self.bell()
 
     def action_confirm_delete(self):
         table = self.query_one(DataTable)

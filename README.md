@@ -57,10 +57,12 @@ pipx run killpy
 - To **mark a virtual environment for deletion**, press `D`.
 - To **confirm deletion of marked virtual environments**, press `Ctrl+D`.
 - To **delete a virtual environment immediately**, press `Shift+Delete`.
+- To **delete a virtual environment immediately**, press `Shift+Delete`.
+- To **clean up __pycache__ folders**, press `P`.
 
 ## Roadmap
 
-- [ ] Delete `__pycache__` Files
+- [x] Delete `__pycache__` Files
 - [ ] Remove `dist` Folders and Build Artifacts
 - [ ] Clean Up Installed Package Cache
 - [ ] Delete `.egg-info` and `.dist-info` Files
