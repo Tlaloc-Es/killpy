@@ -50,7 +50,7 @@ killpy
 Or
 
 ```bash
-pipx run --spec killpy killpy
+pipx run killpy
 ```
 
 - To **close the application**, press `Ctrl+Q`.
