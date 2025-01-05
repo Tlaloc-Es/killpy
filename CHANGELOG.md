@@ -1,3 +1,9 @@
+## 0.9.0 (2025-01-05)
+
+### Feat
+
+- add functionality to clean up __pycache__ directories and update README
+
 ## 0.8.4 (2025-01-05)
 
 ### Fix
