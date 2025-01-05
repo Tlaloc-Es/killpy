@@ -1,3 +1,9 @@
+## 0.8.0 (2025-01-05)
+
+### Feat
+
+- update references from 'KillPy' to 'killpy' across the project
+
 ## 0.7.0 (2025-01-05)
 
 ### Feat
