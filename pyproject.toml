@@ -40,4 +40,5 @@ version_files = [
 ]
 
 [project.scripts]
+KillPy = "killpy.__main__:main"
 killpy = "killpy.__main__:main"
