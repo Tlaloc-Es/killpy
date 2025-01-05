@@ -10,11 +10,11 @@
            ▀      ▀▀▀    `-...-' A tool to delete .venv directories and Conda envs
 ```
 
+<div align="center">
+
 [![PyPI](https://img.shields.io/pypi/v/killpy.svg)](https://pypi.org/project/killpy/)
 [![Downloads](https://static.pepy.tech/personalized-badge/killpy?period=month&units=international_system&left_color=grey&right_color=blue&left_text=PyPi%20Downloads)](https://pepy.tech/project/killpy)
 [![Stars](https://img.shields.io/github/stars/Tlaloc-Es/killpy?color=yellow&style=flat)](https://github.com/Tlaloc-Es/killpy/stargazers)
-
-<div align="center">
 
 ![killpy in action](show.gif)
 
@@ -47,10 +47,16 @@ Run the following command to search for .venv directories and any folders contai
 killpy
 ```
 
-Or
+With `pipx`
 
 ```bash
 pipx run killpy
+```
+
+With `uvx`
+
+```bash
+uvx killpy
 ```
 
 - To **close the application**, press `Ctrl+Q`.
