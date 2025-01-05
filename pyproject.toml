@@ -9,6 +9,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12"
 ]
 dependencies = [
+    "rich>=13.9.4",
     "textual>=1.0.0",
 ]
 
