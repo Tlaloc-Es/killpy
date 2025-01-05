@@ -60,7 +60,7 @@ def find_venvs(base_directory: Path):
             venvs.append((dir_path, ".venv", last_modified, size, size_to_show))
         except FileNotFoundError:
             continue
-
+    venvs.sort(key=lambda x: x[3], reverse=True)
     return venvs
 
 
@@ -76,7 +76,7 @@ def find_venvs_with_pyvenv(base_directory: Path):
         size_to_show = format_size(size)
         venvs.append((venv_dir, "pyvenv.cfg", last_modified, size, size_to_show))
 
-    venvs.sort(key=lambda x: x[2], reverse=True)
+    venvs.sort(key=lambda x: x[3], reverse=True)
     return venvs
 
 
