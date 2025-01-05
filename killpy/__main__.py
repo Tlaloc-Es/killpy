@@ -25,7 +25,13 @@ def remove_duplicates(venvs):
 
 
 def get_total_size(path: Path) -> int:
-    total_size = sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+    total_size = 0
+    for f in path.rglob("*"):
+        try:
+            if f.is_file():
+                total_size += f.stat().st_size
+        except FileNotFoundError:
+            continue
     return total_size
 
 
@@ -43,14 +49,17 @@ def format_size(size_in_bytes: int):
 def find_venvs(base_directory: Path):
     venvs = []
     for dir_path in base_directory.rglob(".venv"):
-        last_modified_timestamp = dir_path.stat().st_mtime
-        last_modified = datetime.fromtimestamp(last_modified_timestamp).strftime(
-            "%d/%m/%Y"
-        )
-        size = get_total_size(dir_path)
-        size_to_show = format_size(size)
-        venvs.append((dir_path, ".venv", last_modified, size, size_to_show))
-        venvs.sort(key=lambda x: x[2], reverse=True)
+        try:
+            dir_path.resolve(strict=True)
+            last_modified_timestamp = dir_path.stat().st_mtime
+            last_modified = datetime.fromtimestamp(last_modified_timestamp).strftime(
+                "%d/%m/%Y"
+            )
+            size = get_total_size(dir_path)
+            size_to_show = format_size(size)
+            venvs.append((dir_path, ".venv", last_modified, size, size_to_show))
+        except FileNotFoundError:
+            continue
 
     return venvs
 
@@ -252,7 +261,10 @@ class TableApp(App):
 
     def delete_environment(self, path, env_type):
         if env_type in {".venv", "pyvenv.cfg"}:
-            shutil.rmtree(path)
+            try:
+                shutil.rmtree(path)
+            except FileNotFoundError:
+                pass
         else:
             remove_conda_env(path)
 
