@@ -26,13 +26,3 @@ jobs:
         run: |
           uv build
           uv publish
-      - name: "Replace KillPy with killpy"
-        run: |
-          sed -i 's/KillPy/killpy/g' uv.lock
-          sed -i 's/KillPy/killpy/g' pyproject.toml
-      - name: "Re-publish package"
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          uv build
-          uv publish

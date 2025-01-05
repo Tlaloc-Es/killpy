@@ -59,11 +59,11 @@ class TableApp(App):
         yield Header()
         banner = Static(
             """
-▗▖ ▗▖▄ █ █ ▗▄▄▖ ▄   ▄              ____
-▐▌▗▞▘▄ █ █ ▐▌ ▐▌█   █           .'`_ o `;__,
-▐▛▚▖ █ █ █ ▐▛▀▘  ▀▀▀█ .       .'.'` '---'  '
-▐▌ ▐▌█ █ █ ▐▌   ▄   █  .`-...-'.'
-                 ▀▀▀    `-...-' A tool to delete .venv directories and Conda envs
+█  ▄ ▄ █ █ ▄▄▄▄  ▄   ▄              ____
+█▄▀  ▄ █ █ █   █ █   █           .'`_ o `;__,
+█ ▀▄ █ █ █ █▄▄▄▀  ▀▀▀█ .       .'.'` '---'  '
+█  █ █ █ █ █     ▄   █  .`-...-'.'
+           ▀      ▀▀▀    `-...-' A tool to delete .venv directories and Conda envs
         """,
             id="banner",
         )
@@ -73,7 +73,7 @@ class TableApp(App):
         yield Footer()
 
     async def on_mount(self) -> None:
-        self.title = """KillPy"""
+        self.title = """killpy"""
         await self.find_venvs()
 
     async def find_venvs(self):

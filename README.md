@@ -1,27 +1,28 @@
 <div align="center">
 
-[![Downloads](https://static.pepy.tech/personalized-badge/KillPy?period=month&units=international_system&left_color=grey&right_color=blue&left_text=PyPi%20Downloads)](https://pepy.tech/project/KillPy)
-[![Stars](https://img.shields.io/github/stars/Tlaloc-Es/KillPy?color=yellow&style=flat)](https://github.com/Tlaloc-Es/KillPy/stargazers)
-
 </div>
 
 ```plaintext
-▗▖ ▗▖▄ █ █ ▗▄▄▖ ▄   ▄              ____
-▐▌▗▞▘▄ █ █ ▐▌ ▐▌█   █           .'`_ o `;__,
-▐▛▚▖ █ █ █ ▐▛▀▘  ▀▀▀█ .       .'.'` '---'  '
-▐▌ ▐▌█ █ █ ▐▌   ▄   █  .`-...-'.'
-                 ▀▀▀    `-...-' A tool to delete .venv directories and Conda envs
+█  ▄ ▄ █ █ ▄▄▄▄  ▄   ▄              ____
+█▄▀  ▄ █ █ █   █ █   █           .'`_ o `;__,
+█ ▀▄ █ █ █ █▄▄▄▀  ▀▀▀█ .       .'.'` '---'  '
+█  █ █ █ █ █     ▄   █  .`-...-'.'
+           ▀      ▀▀▀    `-...-' A tool to delete .venv directories and Conda envs
 ```
+
+[![PyPI](https://img.shields.io/pypi/v/killpy.svg)](https://pypi.org/project/killpy/)
+[![Downloads](https://static.pepy.tech/personalized-badge/killpy?period=month&units=international_system&left_color=grey&right_color=blue&left_text=PyPi%20Downloads)](https://pepy.tech/project/killpy)
+[![Stars](https://img.shields.io/github/stars/Tlaloc-Es/killpy?color=yellow&style=flat)](https://github.com/Tlaloc-Es/killpy/stargazers)
 
 <div align="center">
 
-![KillPy in action](show.gif)
+![killpy in action](show.gif)
 
 </div>
 
 # Delete .venv Directories
 
-`KillPy` is a simple tool designed to locate and delete `.venv` directories from your projects (and Conda envs too). It can help you quickly clean up unnecessary virtual environments and save disk space.
+`killpy` is a simple tool designed to locate and delete `.venv` directories from your projects (and Conda envs too). It can help you quickly clean up unnecessary virtual environments and save disk space.
 
 ## Features
 
@@ -30,24 +31,32 @@
 - **Safe deletion:** Lists the directories to be deleted and asks for confirmation.
 - **Fast and lightweight:** Minimal dependencies for quick execution.
 
-## Installation [![PyPI](https://img.shields.io/pypi/v/KillPy.svg)](https://pypi.org/project/KillPy/)
+## Installation
 
 To install `killpy`, use pip:
 
 ```bash
-pip install KillPy
+pip install killpy
 ```
 
 ## Usage
 
-Run the following command to search for `.venv` directories and any folders containing a `pyvenv.cfg` file, as well as to list all `Conda environments` from the current directory and all its subdirectories recursively:
+Run the following command to search for .venv directories and any folders containing a pyvenv.cfg file, as well as to list all Conda environments from the current directory and all its subdirectories recursively:
 
 ```bash
 killpy
 ```
 
+Or
+
+```bash
+pipx run --spec killpy killpy
+```
+
 - To **close the application**, press `Ctrl+Q`.
-- To **delete a virtual environment**, press `Space` (afte selecting the environment you want to delete).
+- To **mark a virtual environment for deletion**, press `D`.
+- To **confirm deletion of marked virtual environments**, press `Ctrl+D`.
+- To **delete a virtual environment immediately**, press `Shift+Delete`.
 
 ## Roadmap
 
@@ -74,4 +83,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ______________________________________________________________________
 
-Thank you for using `KillPy`! If you find it useful, please star the repository on GitHub!
+Thank you for using `killpy`! If you find it useful, please star the repository on GitHub!
