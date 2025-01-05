@@ -1,3 +1,9 @@
+## 0.5.0 (2025-01-05)
+
+### Feat
+
+- enhance virtual environment management with deletion features and refactor code structure close #7
+
 ## 0.4.0 (2025-01-03)
 
 ### Feat
