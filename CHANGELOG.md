@@ -1,3 +1,9 @@
+## 0.8.4 (2025-01-05)
+
+### Fix
+
+- update sorting logic in find_venvs functions to sort by size
+
 ## 0.8.3 (2025-01-05)
 
 ### Fix
