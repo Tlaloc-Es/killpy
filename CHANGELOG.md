@@ -1,3 +1,9 @@
+## 0.6.0 (2025-01-05)
+
+### Feat
+
+- add KillPy script entry point to pyproject.toml
+
 ## 0.5.0 (2025-01-05)
 
 ### Feat
