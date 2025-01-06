@@ -20,9 +20,9 @@
 
 </div>
 
-# Delete .venv Directories
+# Delete .venv (Virtualenv, Poetry and Conda) Directories
 
-`killpy` is a simple tool designed to locate and delete `.venv` directories from your projects (and Conda envs too). It can help you quickly clean up unnecessary virtual environments and save disk space.
+`killpy` is a simple tool designed to locate and delete `.venv` directories from your projects, including virtual environments created by Poetry and Conda. It can help you quickly clean up unnecessary virtual environments and save disk space.
 
 ## Features
 
