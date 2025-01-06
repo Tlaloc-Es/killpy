@@ -1,3 +1,9 @@
+## 0.10.0 (2025-01-06)
+
+### Feat
+
+- enhance README and add support for listing Poetry virtual environments
+
 ## 0.9.0 (2025-01-05)
 
 ### Feat
