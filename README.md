@@ -6,8 +6,8 @@
 █  ▄ ▄ █ █ ▄▄▄▄  ▄   ▄              ____
 █▄▀  ▄ █ █ █   █ █   █           .'`_ o `;__,
 █ ▀▄ █ █ █ █▄▄▄▀  ▀▀▀█ .       .'.'` '---'  '
-█  █ █ █ █ █     ▄   █  .`-...-'.'
-           ▀      ▀▀▀    `-...-' A tool to delete .venv directories and Conda envs
+█  █ █ █ █ █     ▄   █  .`-...-'.'A tool to delete virtual environments (.venv, Conda, Poetry)
+           ▀      ▀▀▀    `-...-'and clean up __pycache__ and temp files.
 ```
 
 <div align="center">

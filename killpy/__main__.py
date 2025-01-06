@@ -1,4 +1,5 @@
 import asyncio
+import platform
 import shutil
 import subprocess
 from datetime import datetime
@@ -101,6 +102,47 @@ def remove_conda_env(env_name):
         print(f"Error: {e}")
 
 
+def list_poetry_venvs_with_ls():
+    try:
+        if platform.system() == "Windows":
+            poetry_venvs_dir = (
+                Path.home() / "AppData" / "Local" / "pypoetry" / "virtualenvs"
+            )
+        else:
+            poetry_venvs_dir = Path.home() / ".cache" / "pypoetry" / "virtualenvs"
+
+        if not poetry_venvs_dir.exists():
+            print(
+                f"No Poetry virtual environments directory found at {poetry_venvs_dir}"
+            )
+            return []
+
+        venvs = []
+        for venv_path in poetry_venvs_dir.iterdir():
+            if venv_path.is_dir():
+                last_modified_timestamp = venv_path.stat().st_mtime
+                last_modified = datetime.fromtimestamp(
+                    last_modified_timestamp
+                ).strftime("%d/%m/%Y")
+                size = get_total_size(venv_path)
+                size_to_show = format_size(size)
+                venvs.append((venv_path, "poetry", last_modified, size, size_to_show))
+
+        venvs.sort(key=lambda x: x[3], reverse=True)
+        return venvs
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return []
+
+    except FileNotFoundError:
+        print("'ls' is not installed or not in PATH.")
+        return []
+    except subprocess.CalledProcessError as e:
+        print(f"Error while executing 'ls' command: {e}")
+        return []
+
+
 def list_conda_environments():
     try:
         result = subprocess.run(
@@ -189,8 +231,8 @@ class TableApp(App):
 █  ▄ ▄ █ █ ▄▄▄▄  ▄   ▄              ____
 █▄▀  ▄ █ █ █   █ █   █           .'`_ o `;__,
 █ ▀▄ █ █ █ █▄▄▄▀  ▀▀▀█ .       .'.'` '---'  '
-█  █ █ █ █ █     ▄   █  .`-...-'.'
-           ▀      ▀▀▀    `-...-' A tool to delete .venv directories and Conda envs
+█  █ █ █ █ █     ▄   █  .`-...-'.'A tool to delete virtual environments (.venv, Conda, Poetry)
+           ▀      ▀▀▀    `-...-'and clean up __pycache__ and temp files.
         """,
             id="banner",
         )
@@ -210,6 +252,7 @@ class TableApp(App):
             asyncio.to_thread(find_venvs, current_directory),
             asyncio.to_thread(list_conda_environments),
             asyncio.to_thread(find_venvs_with_pyvenv, current_directory),
+            asyncio.to_thread(list_poetry_venvs_with_ls),
         )
         venvs = [env for sublist in venvs for env in sublist]
         venvs = remove_duplicates(venvs)
@@ -284,7 +327,7 @@ class TableApp(App):
         self.bell()
 
     def delete_environment(self, path, env_type):
-        if env_type in {".venv", "pyvenv.cfg"}:
+        if env_type in {".venv", "pyvenv.cfg", "poetry"}:
             try:
                 shutil.rmtree(path)
             except FileNotFoundError:
