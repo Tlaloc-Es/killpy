@@ -1,3 +1,9 @@
+## 0.11.0 (2025-01-16)
+
+### Feat
+
+- add support for pipx package management and enhance virtual environment tab functionality
+
 ## 0.10.0 (2025-01-06)
 
 ### Feat
