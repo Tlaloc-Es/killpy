@@ -1,3 +1,19 @@
+## 0.13.0 (2025-01-17)
+
+### Feat
+
+- add GitHub Actions workflow for version bumping and changelog generation
+
+### Fix
+
+- forcebump
+- update environment removal methods to use killers dictionary
+- update import path for TableApp in main module
+
+### Refactor
+
+- separate entities
+
 ## 0.11.0b4 (2025-01-17)
 
 ### Feat
