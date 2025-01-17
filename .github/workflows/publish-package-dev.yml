@@ -5,6 +5,8 @@ on:
     workflows: ["Bump version dev"]
     types:
       - completed
+  workflow_dispatch:
+
 
 jobs:
   publish-service-client-package:
