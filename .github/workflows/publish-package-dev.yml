@@ -23,7 +23,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - name: "build"
         env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN_DEV }}
         id: build
         run: |
           uv build
