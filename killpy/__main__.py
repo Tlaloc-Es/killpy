@@ -1,4 +1,4 @@
-from cli import TableApp
+from killpy.cli import TableApp
 
 
 def main():
