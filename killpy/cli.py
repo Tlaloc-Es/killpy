@@ -273,9 +273,9 @@ class TableApp(App):
     @is_venv_tab
     def delete_environment(self, path, env_type):
         if env_type in {".venv", "pyvenv.cfg", "poetry"}:
-            self.poetry_killer.remove_environment(path)  # TODO refactor this
+            self.killers["venv_killer"].remove_environment(path)
         else:
-            self.conda_killer.remove_environment(path)
+            self.killers["conda_killer"].remove_environment(path)
 
     @is_pipx_tab
     def action_uninstall_pipx(self):
@@ -288,7 +288,7 @@ class TableApp(App):
             package = row_data[0]
             size = row_data[1]
 
-            self.pipx_killer.remove_environment(package)
+            self.killers["pipx_killer"].remove_environment(package)
 
             table.update_cell_at((cursor_cell.row, 3), EnvStatus.DELETED.value)
             self.deleted_cells.append(cursor_cell)
