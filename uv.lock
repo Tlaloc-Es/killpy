@@ -181,7 +181,7 @@ wheels = [
 
 [[package]]
 name = "killpy"
-version = "0.11.0b4"
+version = "0.12.0"
 source = { editable = "." }
 dependencies = [
     { name = "rich" },
