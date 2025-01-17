@@ -15,7 +15,7 @@
 [![PyPI](https://img.shields.io/pypi/v/killpy.svg)](https://pypi.org/project/killpy/)
 [![Downloads](https://static.pepy.tech/personalized-badge/killpy?period=month&units=international_system&left_color=grey&right_color=blue&left_text=PyPi%20Downloads)](https://pepy.tech/project/killpy)
 [![Stars](https://img.shields.io/github/stars/Tlaloc-Es/killpy?color=yellow&style=flat)](https://github.com/Tlaloc-Es/killpy/stargazers)
-
+![GitHub issue custom search](https://img.shields.io/github/issues-search?query=repo%3ATlaloc-Es%2Fkillpy%20is%3Aclosed&label=issues%20closed&labelColor=%20%237d89b0&color=%20%235d6b98)
 ![killpy in action](show.gif)
 
 </div>
@@ -62,7 +62,6 @@ uvx killpy
 - To **close the application**, press `Ctrl+Q`.
 - To **mark a virtual environment for deletion**, press `D`.
 - To **confirm deletion of marked virtual environments**, press `Ctrl+D`.
-- To **delete a virtual environment immediately**, press `Shift+Delete`.
 - To **delete a virtual environment immediately**, press `Shift+Delete`.
 - To **clean up __pycache__ folders**, press `P`.
 
