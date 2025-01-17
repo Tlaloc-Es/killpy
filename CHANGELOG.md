@@ -1,3 +1,14 @@
+## 0.11.0b0 (2025-01-17)
+
+### Feat
+
+- add GitHub Actions workflow for version bumping and changelog generation
+- add support for pipx package management and enhance virtual environment tab functionality
+
+### Refactor
+
+- separate entities
+
 ## 0.10.0 (2025-01-06)
 
 ### Feat
