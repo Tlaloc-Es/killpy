@@ -27,4 +27,4 @@ jobs:
         id: build
         run: |
           uv build
-          uv publish --index testpypi
+          uv publish --publish-url https://test.pypi.org/legacy/
