@@ -12,6 +12,7 @@ dependencies = [
     "rich>=13.9.4",
     "textual>=1.0.0",
 ]
+requires-python = ">=3.12"
 
 [tool.setuptools]
 license-files = []
@@ -30,6 +31,9 @@ dev = [
 
 [tool.uv.workspace]
 members = ["q"]
+
+[tool.uv]
+package = true
 
 [tool.commitizen]
 name = "cz_conventional_commits"
