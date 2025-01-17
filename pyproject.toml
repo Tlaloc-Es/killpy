@@ -13,6 +13,11 @@ dependencies = [
     "textual>=1.0.0",
 ]
 
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+
 [tool.setuptools]
 license-files = []
 
