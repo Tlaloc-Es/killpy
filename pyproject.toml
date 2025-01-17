@@ -1,6 +1,6 @@
 [project]
 name = "killpy"
-version = "0.11.0b3"
+version = "0.11.0b4"
 description = "List all .venv directories and Conda environments 🐍 on your system and check how much space they are using. You can then choose which ones to delete in order to free up space 🧹."
 readme = "README.md"
 classifiers = [
