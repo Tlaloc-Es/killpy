@@ -1,3 +1,9 @@
+## 0.14.1 (2025-01-23)
+
+### Fix
+
+-  the app breaks when 'pipx' is not installed. #14
+
 ## 0.14.0 (2025-01-17)
 
 ### Fix
