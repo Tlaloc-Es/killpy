@@ -1,4 +1,5 @@
 import json
+import logging
 import subprocess
 from pathlib import Path
 
@@ -39,18 +40,17 @@ class PipxKiller(BaseKiller):
             return packages_with_size
 
         except subprocess.CalledProcessError as e:
-            print(f"Error: {e}")
-            raise e
+            logging.error("Error:  %s", e)
+            return []
         except Exception as e:
-            print(f"An error occurred: {e}")
-            raise e
-
+            logging.error("An error occurred:  %s", e)
+            return []
         except subprocess.CalledProcessError as e:
-            print(f"Error: {e}")
-            raise e
+            logging.error("Error:  %s", e)
+            return []
         except Exception as e:
-            print(f"An error occurred: {e}")
-            raise e
+            logging.error("An error occurred: %s", e)
+            return []
 
     def remove_environment(self, env_to_delete):
         try:
@@ -59,5 +59,4 @@ class PipxKiller(BaseKiller):
                 check=True,
             )
         except subprocess.CalledProcessError as e:
-            print(f"Error: {e}")
-            return
+            logging.error("Error: %s", e)
