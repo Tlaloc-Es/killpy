@@ -1,3 +1,9 @@
+## 0.15.0 (2025-02-07)
+
+### Feat
+
+- add clean command to killpy and integrate with CLI
+
 ## 0.14.1 (2025-01-23)
 
 ### Fix
