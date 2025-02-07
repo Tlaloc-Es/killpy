@@ -66,6 +66,18 @@ uvx killpy
 - To **delete a virtual environment immediately**, press `Shift+Delete`.
 - To **clean up __pycache__ folders**, press `P`.
 
+## Pre-Commit
+
+To automatically use KillPy on each commit, you can add a pre-commit hook to your project. This will clean cache directories (like `__pycache__`) and other unnecessary files before every commit.
+
+```yml
+  - repo: https://github.com/Tlaloc-Es/KillPy
+    rev: 0.15.4
+    hooks:
+      - id: killpy
+        pass_filenames: false
+```
+
 ## Roadmap
 
 - [x] Delete `__pycache__` Files
