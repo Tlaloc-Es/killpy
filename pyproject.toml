@@ -9,6 +9,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12"
 ]
 dependencies = [
+    "click>=8.1.8",
     "rich>=13.9.4",
     "textual>=1.0.0",
 ]
