@@ -1,5 +1,5 @@
 - id: killpy
   name: killpy
   description: Clean repo
-  entry: killpy
+  entry: killpy clean
   language: python
