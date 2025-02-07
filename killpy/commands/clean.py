@@ -6,6 +6,8 @@ import click
 from killpy.cleaners import remove_pycache
 from killpy.files import format_size
 
+logging.basicConfig(level=logging.INFO)
+
 
 @click.command()
 @click.option("--path", default=Path.cwd(), help="Path to the directory to clean")
