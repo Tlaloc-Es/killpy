@@ -1,3 +1,9 @@
+## 0.15.4 (2025-02-07)
+
+### Fix
+
+- set logging level to INFO in clean command for better visibility
+
 ## 0.15.3 (2025-02-07)
 
 ### Fix
