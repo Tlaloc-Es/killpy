@@ -1,3 +1,9 @@
+## 0.15.3 (2025-02-07)
+
+### Fix
+
+- enhance logging in clean command to report freed space
+
 ## 0.15.2 (2025-02-07)
 
 ### Fix
