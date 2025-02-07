@@ -1,3 +1,9 @@
+## 0.15.2 (2025-02-07)
+
+### Fix
+
+- update killpy entry in pre-commit hooks to use clean command
+
 ## 0.15.1 (2025-02-07)
 
 ### Fix
