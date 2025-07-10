@@ -17,6 +17,7 @@ from textual.widgets import (
     TabPane,
 )
 
+from killpy import __version__
 from killpy.cleaners import remove_pycache
 from killpy.files import format_size
 from killpy.killers import (
@@ -126,12 +127,14 @@ class TableApp(App):
     def compose(self) -> ComposeResult:
         yield Header()
         banner = Static(
-            """
+            f"""
 █  ▄ ▄ █ █ ▄▄▄▄  ▄   ▄              ____
 █▄▀  ▄ █ █ █   █ █   █           .'`_ o `;__,
 █ ▀▄ █ █ █ █▄▄▄▀  ▀▀▀█ .       .'.'` '---'  ' A tool to delete
 █  █ █ █ █ █     ▄   █  .`-...-'.' .venv, Conda, Poetry environments
            ▀      ▀▀▀    `-...-'and clean up __pycache__ and temp files.
+
+                                           Version {__version__}
         """,
             id="banner",
         )
