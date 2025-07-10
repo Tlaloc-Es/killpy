@@ -40,7 +40,7 @@ package = true
 name = "cz_conventional_commits"
 version = "0.15.4"
 version_files = [
-    "src/__version__.py",
+    "killpy/__init__.py",
     "pyproject.toml:version"
 ]
 
