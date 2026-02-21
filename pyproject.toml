@@ -4,15 +4,11 @@ version = "0.15.5"
 description = "List all .venv directories and Conda environments 🐍 on your system and check how much space they are using. You can then choose which ones to delete in order to free up space 🧹."
 readme = "README.md"
 classifiers = [
-  "Environment :: Console",
-  "License :: OSI Approved :: MIT License",
-  "Programming Language :: Python :: 3.12"
+    "Environment :: Console",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
 ]
-dependencies = [
-    "click>=8.1.8",
-    "rich>=13.9.4",
-    "textual>=1.0.0",
-]
+dependencies = ["click>=8.1.8", "rich>=13.9.4", "textual>=1.0.0"]
 requires-python = ">=3.12"
 
 [tool.setuptools]
@@ -30,19 +26,13 @@ dev = [
 ]
 
 
-[tool.uv.workspace]
-members = ["q"]
-
 [tool.uv]
 package = true
 
 [tool.commitizen]
 name = "cz_conventional_commits"
 version = "0.15.5"
-version_files = [
-    "src/__version__.py",
-    "pyproject.toml:version"
-]
+version_files = ["pyproject.toml:version"]
 
 [project.scripts]
 killpy = "killpy.__main__:cli"

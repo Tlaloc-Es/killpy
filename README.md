@@ -15,7 +15,7 @@
 [![PyPI](https://img.shields.io/pypi/v/killpy.svg)](https://pypi.org/project/killpy/)
 [![Downloads](https://static.pepy.tech/personalized-badge/killpy?period=month&units=international_system&left_color=grey&right_color=blue&left_text=PyPi%20Downloads)](https://pepy.tech/project/killpy)
 [![Stars](https://img.shields.io/github/stars/Tlaloc-Es/killpy?color=yellow&style=flat)](https://github.com/Tlaloc-Es/killpy/stargazers)
-[![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?text=🐍%20KillPy%20helps%20you%20reclaim%20disk%20space%20by%20detecting%20unused%20Python%20environments%20(.venv,%20poetry%20env,%20conda%20env)%20and%20pipx%20packages.%20Clean,%20organize%20and%20free%20up%20space%20effortlessly!%20🚀&url=https://github.com/Tlaloc-Es/KillPy)
+[![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](<https://twitter.com/intent/tweet?text=%F0%9F%90%8D%20KillPy%20helps%20you%20reclaim%20disk%20space%20by%20detecting%20unused%20Python%20environments%20(.venv,%20poetry%20env,%20conda%20env)%20and%20pipx%20packages.%20Clean,%20organize%20and%20free%20up%20space%20effortlessly!%20%F0%9F%9A%80&url=https://github.com/Tlaloc-Es/KillPy>)
 ![GitHub issue custom search](https://img.shields.io/github/issues-search?query=repo%3ATlaloc-Es%2Fkillpy%20is%3Aclosed&label=issues%20closed&labelColor=%20%237d89b0&color=%20%235d6b98)
 ![killpy in action](show.gif)
 
@@ -48,10 +48,20 @@ Run the following command to search for .venv directories and any folders contai
 killpy
 ```
 
+To scan a different directory instead of the current one:
+
+```bash
+killpy --path /path/to/project
+```
+
 With `pipx`
 
 ```bash
 pipx run killpy
+```
+
+```bash
+pipx run killpy --path /path/to/project
 ```
 
 With `uvx`
@@ -60,22 +70,33 @@ With `uvx`
 uvx killpy
 ```
 
+```bash
+uvx killpy --path /path/to/project
+```
+
 - To **close the application**, press `Ctrl+Q`.
 - To **mark a virtual environment for deletion**, press `D`.
 - To **confirm deletion of marked virtual environments**, press `Ctrl+D`.
 - To **delete a virtual environment immediately**, press `Shift+Delete`.
-- To **clean up __pycache__ folders**, press `P`.
+- To **clean up **pycache** folders**, press `P`.
+
+## Disclaimer
+
+`killpy` performs destructive actions (environment/package/cache deletion).
+By using this tool, you accept full responsibility for any deleted files or
+unexpected data loss. The killpy team is not responsible for unintended or
+unexpected deletions.
 
 ## Pre-Commit
 
 To automatically use KillPy on each commit, you can add a pre-commit hook to your project. This will clean cache directories (like `__pycache__`) and other unnecessary files before every commit.
 
 ```yml
-  - repo: https://github.com/Tlaloc-Es/KillPy
-    rev: 0.15.4
-    hooks:
-      - id: killpy
-        pass_filenames: false
+- repo: https://github.com/Tlaloc-Es/KillPy
+  rev: 0.15.5
+  hooks:
+    - id: killpy
+      pass_filenames: false
 ```
 
 ## Roadmap

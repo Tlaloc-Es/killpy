@@ -23,12 +23,18 @@ class PipxKiller(BaseKiller):
             for package_name, package_data in installed_packages.get(
                 "venvs", {}
             ).items():
-                bin_path = (
+                app_paths = (
                     package_data.get("metadata", {})
                     .get("main_package", {})
-                    .get("app_paths", [])[0]
-                    .get("__Path__", "")
+                    .get("app_paths", [])
                 )
+                if not app_paths:
+                    continue
+
+                bin_path = app_paths[0].get("__Path__", "")
+                if not bin_path:
+                    continue
+
                 package_path = Path(bin_path).parent
                 if package_path.exists():
                     total_size = get_total_size(package_path)
@@ -39,12 +45,6 @@ class PipxKiller(BaseKiller):
 
             return packages_with_size
 
-        except subprocess.CalledProcessError as e:
-            logging.error("Error:  %s", e)
-            return []
-        except Exception as e:
-            logging.error("An error occurred:  %s", e)
-            return []
         except subprocess.CalledProcessError as e:
             logging.error("Error:  %s", e)
             return []

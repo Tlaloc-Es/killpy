@@ -22,7 +22,7 @@ class PoetryKiller(VenvKiller):
                 poetry_venvs_dir = Path.home() / ".cache" / "pypoetry" / "virtualenvs"
 
             if not poetry_venvs_dir.exists():
-                logging.info(
+                logging.debug(
                     "No Poetry virtual environments directory found at %s",
                     poetry_venvs_dir,
                 )

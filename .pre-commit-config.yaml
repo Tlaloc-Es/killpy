@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
     - id: check-yaml
     - id: check-json
@@ -9,28 +9,28 @@ repos:
     - id: trailing-whitespace
 
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.21
+    rev: 1.0.0
     hooks:
     - id: mdformat
 
   - hooks:
     - id: commitizen
     repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.1.0
+    rev: v4.13.8
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.5
+    rev: v0.15.2
     hooks:
     - id: ruff
       args: [ --fix]
     - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.14.1"
+    rev: "v1.19.1"
     hooks:
         - id: mypy
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         args: ["@.codespellrc"]
