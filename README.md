@@ -93,7 +93,7 @@ To automatically use KillPy on each commit, you can add a pre-commit hook to you
 
 ```yml
 - repo: https://github.com/Tlaloc-Es/KillPy
-  rev: 0.15.6
+  rev: 0.15.7
   hooks:
     - id: killpy
       pass_filenames: false
