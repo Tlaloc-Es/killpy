@@ -21,75 +21,104 @@
 
 </div>
 
-# Delete .venv (Virtualenv, Poetry and Conda) Directories
+# killpy
 
-`killpy` is a simple tool designed to locate and delete `.venv` directories from your projects, including virtual environments created by Poetry and Conda. It can help you quickly clean up unnecessary virtual environments and save disk space.
+Reclaim disk space by finding and removing Python environments you no longer use.
 
-## Features
+`killpy` discovers:
 
-- **Automatic search:** Finds all .venv directories and any folders containing a pyvenv.cfg file recursively from the current working directory, as they are considered virtual environment folders.
-- **Support for Conda**: Lists all available Conda environments.
-- **Safe deletion:** Lists the directories to be deleted and asks for confirmation.
-- **Fast and lightweight:** Minimal dependencies for quick execution.
+- `.venv` folders
+- folders that contain `pyvenv.cfg`
+- Poetry virtual environments
+- Conda environments
+- installed `pipx` packages
+- `__pycache__` directories
 
-## Installation
+It shows sizes and lets you remove things explicitly from an interactive terminal UI.
 
-To install `killpy`, use pip:
+## Quickstart
+
+Install:
 
 ```bash
 pip install killpy
 ```
 
-## Usage
-
-Run the following command to search for .venv directories and any folders containing a pyvenv.cfg file, as well as to list all Conda environments from the current directory and all its subdirectories recursively:
+Run from current directory:
 
 ```bash
 killpy
 ```
 
-To scan a different directory instead of the current one:
+Scan a specific path:
 
 ```bash
 killpy --path /path/to/project
 ```
 
-With `pipx`
+Without installing:
 
 ```bash
 pipx run killpy
 ```
 
-```bash
-pipx run killpy --path /path/to/project
-```
-
-With `uvx`
+or
 
 ```bash
 uvx killpy
 ```
 
+## Why use killpy
+
+- **Fast discovery** of Python environments with size metadata.
+- **Safer cleanup flow** with explicit mark/delete actions.
+- **Works across tools** (`venv`, `pyvenv.cfg`, Poetry, Conda, `pipx`).
+- **Includes cache cleanup** via `killpy clean` or UI shortcut.
+
+## Interactive controls
+
+- `Ctrl+Q`: close the app
+- `D`: mark selected virtual environment for deletion
+- `Ctrl+D`: delete marked virtual environments
+- `Shift+Delete`: delete selected virtual environment immediately
+- `P`: clean `__pycache__` folders
+- `U`: uninstall selected `pipx` package
+
+## CLI commands
+
+Main app:
+
 ```bash
-uvx killpy --path /path/to/project
+killpy
 ```
 
-- To **close the application**, press `Ctrl+Q`.
-- To **mark a virtual environment for deletion**, press `D`.
-- To **confirm deletion of marked virtual environments**, press `Ctrl+D`.
-- To **delete a virtual environment immediately**, press `Shift+Delete`.
-- To **clean up `__pycache__` folders**, press `P`.
+or
 
-## Disclaimer
+```bash
+killpy --path /path/to/project
+```
+
+Cache cleanup command:
+
+```bash
+killpy clean
+```
+
+or
+
+```bash
+killpy clean --path /path/to/project
+```
+
+## Safety
 
 `killpy` performs destructive actions (environment/package/cache deletion).
-By using this tool, you accept full responsibility for any deleted files or
-unexpected data loss. The killpy team is not responsible for unintended or
-unexpected deletions.
+Always review selected items before confirming removal.
+You are responsible for files deleted on your system.
 
-## Pre-Commit
+## Pre-commit hook
 
-To automatically use KillPy on each commit, you can add a pre-commit hook to your project. This will clean cache directories (like `__pycache__`) and other unnecessary files before every commit.
+Use `killpy clean` before each commit to remove cache directories:
 
 ```yml
 - repo: https://github.com/Tlaloc-Es/KillPy
@@ -99,29 +128,52 @@ To automatically use KillPy on each commit, you can add a pre-commit hook to you
       pass_filenames: false
 ```
 
+## FAQ
+
+**Does it fail if Conda or pipx are not installed?**
+
+No. Missing tools are handled gracefully.
+
+**Can I scan outside the current folder?**
+
+Yes. Use `killpy --path /target/path`.
+
+**Does it auto-delete anything on startup?**
+
+No. Deletion requires explicit user action.
+
+## For AI assistants and contributors
+
+- Project behavior and guardrails are documented in [AGENTS.md](AGENTS.md).
+- Useful local checks:
+
+```bash
+uv python -m compileall killpy
+pre-commit run --all-files
+```
+
 ## Roadmap
 
-- [x] Delete `__pycache__` Files
-- [ ] Remove `dist` Folders and Build Artifacts
-- [ ] Clean Up Installed Package Cache
-- [ ] Delete `.egg-info` and `.dist-info` Files
-- [ ] Analyze and Remove Unused Dependencies
-- [ ] Optimize Disk Space in Python Projects
+- [x] Delete `__pycache__` folders
+- [ ] Remove `dist` folders and build artifacts
+- [ ] Clean installed package caches
+- [ ] Delete `.egg-info` and `.dist-info` folders
+- [ ] Analyze and remove unused dependencies
 
 ## Contributing
 
-Contributions are welcome! If you'd like to improve this tool, feel free to fork the repository and submit a pull request.
+Contributions are welcome.
 
 1. Fork the repository
-1. Create a new branch for your feature: `git checkout -b my-feature`
+1. Create a branch: `git checkout -b my-feature`
 1. Commit your changes: `git commit -m 'Add my feature'`
-1. Push to the branch: `git push origin my-feature`
-1. Submit a pull request
+1. Push your branch: `git push origin my-feature`
+1. Open a pull request
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+MIT. See [LICENSE](LICENSE).
 
 ______________________________________________________________________
 
-Thank you for using `killpy`! If you find it useful, please star the repository on GitHub!
+If `killpy` saved you time or disk space, consider starring the repo ⭐
