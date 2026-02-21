@@ -46,19 +46,6 @@ def is_pipx_tab(func):
     return wrapper
 
 
-def remove_duplicates(venvs):
-    seen_paths = set()
-    unique_venvs = []
-
-    for venv in venvs:
-        venv_path = venv[0]
-        if venv_path not in seen_paths:
-            unique_venvs.append(venv)
-            seen_paths.add(venv_path)
-
-    return unique_venvs
-
-
 def shorten_path_for_table(path_value, max_parts: int = 2) -> str:
     path_text = str(path_value)
     if "/" not in path_text and "\\" not in path_text:

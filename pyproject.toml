@@ -32,7 +32,7 @@ package = true
 [tool.commitizen]
 name = "cz_conventional_commits"
 version = "0.15.6"
-version_files = ["pyproject.toml:version"]
+version_files = ["pyproject.toml:version", "README.md:rev:"]
 
 [project.scripts]
 killpy = "killpy.__main__:cli"

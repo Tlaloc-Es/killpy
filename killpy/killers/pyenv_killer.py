@@ -10,7 +10,7 @@ class PyenvKiller(VenvKiller):
 
     def list_environments(self):
         venvs = []
-        for dir_path in self.root_dir.rglob("pyvenv.cfg"):
+        for dir_path in self._iter_files_named("pyvenv.cfg"):
             venv_dir = dir_path.parent
             last_modified_timestamp = dir_path.stat().st_mtime
             last_modified = datetime.fromtimestamp(last_modified_timestamp).strftime(

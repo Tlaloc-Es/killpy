@@ -78,7 +78,7 @@ uvx killpy --path /path/to/project
 - To **mark a virtual environment for deletion**, press `D`.
 - To **confirm deletion of marked virtual environments**, press `Ctrl+D`.
 - To **delete a virtual environment immediately**, press `Shift+Delete`.
-- To **clean up **pycache** folders**, press `P`.
+- To **clean up `__pycache__` folders**, press `P`.
 
 ## Disclaimer
 
@@ -93,7 +93,7 @@ To automatically use KillPy on each commit, you can add a pre-commit hook to you
 
 ```yml
 - repo: https://github.com/Tlaloc-Es/KillPy
-  rev: 0.15.5
+  rev: 0.15.6
   hooks:
     - id: killpy
       pass_filenames: false
