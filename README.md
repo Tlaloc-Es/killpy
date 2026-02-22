@@ -21,6 +21,10 @@
 
 </div>
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Tlaloc-Es/killpy&type=date&legend=bottom-right)](https://www.star-history.com/#Tlaloc-Es/killpy&type=date&legend=bottom-right)
+
 # killpy
 
 Reclaim disk space by finding and removing Python environments you no longer use.
