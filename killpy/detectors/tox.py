@@ -1,0 +1,55 @@
+"""Detector for tox environment directories (``.tox/``)."""
+
+from __future__ import annotations
+
+import logging
+import os
+from datetime import datetime
+from pathlib import Path
+
+from killpy.detectors.base import AbstractDetector
+from killpy.files import get_total_size
+from killpy.models import Environment
+
+logger = logging.getLogger(__name__)
+
+_PRUNED: frozenset[str] = frozenset({".git", ".hg", ".svn", "node_modules"})
+
+
+class ToxDetector(AbstractDetector):
+    """Detects ``.tox`` directories created by tox test automation."""
+
+    name = "tox"
+
+    def can_handle(self) -> bool:
+        return True  # pure filesystem walk
+
+    def detect(self, path: Path) -> list[Environment]:
+        envs: list[Environment] = []
+        for current_root, directories, _ in os.walk(path, topdown=True):
+            pruned = set()
+            for d in directories:
+                if d in _PRUNED:
+                    pruned.add(d)
+                    continue
+                if d == ".tox":
+                    tox_path = Path(current_root) / d
+                    try:
+                        stat = tox_path.stat()
+                        size = get_total_size(tox_path)
+                        envs.append(
+                            Environment(
+                                path=tox_path,
+                                name=str(tox_path),
+                                type="tox",
+                                last_accessed=datetime.fromtimestamp(stat.st_mtime),
+                                size_bytes=size,
+                            )
+                        )
+                    except (FileNotFoundError, OSError) as exc:
+                        logger.debug("Skipping %s: %s", tox_path, exc)
+                    pruned.add(d)
+            directories[:] = [d for d in directories if d not in pruned]
+
+        envs.sort(key=lambda e: e.size_bytes, reverse=True)
+        return envs

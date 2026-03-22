@@ -19,15 +19,11 @@ from textual.widgets import (
     TabPane,
 )
 
+from killpy.cleaner import Cleaner, CleanerError
 from killpy.cleaners import remove_pycache
 from killpy.files import format_size
-from killpy.killers import (
-    CondaKiller,
-    PipxKiller,
-    PoetryKiller,
-    PyenvKiller,
-    VenvKiller,
-)
+from killpy.models import Environment
+from killpy.scanner import Scanner
 
 
 def is_venv_tab(func):
@@ -71,6 +67,7 @@ class VenvRow(TypedDict):
     size: int
     size_human: str
     status: str
+    environment: Environment
 
 
 class PipxRow(TypedDict):
@@ -78,6 +75,7 @@ class PipxRow(TypedDict):
     size: int
     size_human: str
     status: str
+    environment: Environment
 
 
 class TableApp(App):
@@ -110,13 +108,8 @@ class TableApp(App):
         self.pipx_rows: list[PipxRow] = []
         self.sort_state: dict[str, tuple[int, bool]] = {}
         self.bytes_release: int = 0
-        self.killers = {
-            "conda_killer": CondaKiller(),
-            "pipx_killer": PipxKiller(),
-            "poetry_killer": PoetryKiller(self.root_dir),
-            "venv_killer": VenvKiller(self.root_dir),
-            "pyenv_killer": PyenvKiller(self.root_dir),
-        }
+        self.cleaner = Cleaner()
+        self.scanner = Scanner(types={"venv", "pyenv", "poetry", "conda", "pipx"})
 
     @staticmethod
     def get_app_version() -> str:
@@ -240,15 +233,16 @@ class TableApp(App):
 
         venv_table.focus()
 
-    def add_venv_environment(self, environment: tuple[Any, ...]) -> None:
+    def add_venv_environment(self, environment: Environment) -> None:
         self.venv_rows.append(
             {
-                "path": str(environment[0]),
-                "type": environment[1],
-                "last_modified": environment[2],
-                "size": environment[3],
-                "size_human": environment[4],
+                "path": str(environment.path),
+                "type": environment.type,
+                "last_modified": environment.last_accessed_str,
+                "size": environment.size_bytes,
+                "size_human": environment.size_human,
                 "status": "",
+                "environment": environment,
             }
         )
 
@@ -263,13 +257,14 @@ class TableApp(App):
             row["status"],
         )
 
-    def add_pipx_environment(self, environment: tuple[Any, ...]) -> None:
+    def add_pipx_environment(self, environment: Environment) -> None:
         self.pipx_rows.append(
             {
-                "package": environment[0],
-                "size": environment[1],
-                "size_human": environment[2],
+                "package": environment.name,
+                "size": environment.size_bytes,
+                "size_human": environment.size_human,
                 "status": "",
+                "environment": environment,
             }
         )
 
@@ -372,9 +367,6 @@ class TableApp(App):
         else:
             self.sort_pipx_rows(column_index, reverse)
 
-    async def fetch_killer_data(self, killer: str):
-        return killer, await self.list_environments_of(killer)
-
     async def load_initial_data(self) -> None:
         status_label = self.query_one("#status-label", Label)
         loading = self.query_one("#scan-loading", LoadingIndicator)
@@ -383,38 +375,30 @@ class TableApp(App):
         status_label.update("Scanning environments...")
         loading.display = True
 
-        killer_names = [
-            "venv_killer",
-            "conda_killer",
-            "pyenv_killer",
-            "poetry_killer",
-            "pipx_killer",
+        applicable_detectors = [
+            detector for detector in self.scanner._detectors if detector.can_handle()
         ]
-        total_tasks = len(killer_names)
+        total_tasks = len(applicable_detectors)
         completed_tasks = 0
         venv_count = 0
         pipx_count = 0
-        seen_venv_paths = set()
+        seen_venv_paths: set[Path] = set()
 
-        tasks = [
-            asyncio.create_task(self.fetch_killer_data(name)) for name in killer_names
-        ]
-        for task in asyncio.as_completed(tasks):
-            killer, environments = await task
-
-            if killer == "pipx_killer":
-                for environment in environments:
+        async for _detector, environments in self.scanner.scan_async(self.root_dir):
+            for environment in environments:
+                if environment.type == "pipx":
                     self.add_pipx_environment(environment)
                     pipx_count += 1
-            else:
-                for environment in environments:
-                    environment_path = environment[0]
-                    if environment_path in seen_venv_paths:
+                else:
+                    try:
+                        resolved_path = environment.path.resolve()
+                    except OSError:
+                        resolved_path = environment.path
+                    if resolved_path in seen_venv_paths:
                         continue
-                    seen_venv_paths.add(environment_path)
+                    seen_venv_paths.add(resolved_path)
                     self.add_venv_environment(environment)
                     venv_count += 1
-
             completed_tasks += 1
             status_label.update(
                 f"Scanning ({completed_tasks}/{total_tasks})... "
@@ -425,9 +409,6 @@ class TableApp(App):
         status_label.update(
             f"Found {venv_count} virtual environments and {pipx_count} pipx packages"
         )
-
-    def list_environments_of(self, killer: str):
-        return asyncio.to_thread(self.killers[killer].list_environments)
 
     async def action_clean_pycache(self):
         total_freed_space = await asyncio.to_thread(remove_pycache, self.root_dir)
@@ -458,10 +439,10 @@ class TableApp(App):
             if row["status"] != EnvStatus.MARKED_TO_DELETE.value:
                 continue
 
-            self.bytes_release += int(row["size"])
-            self.delete_environment(row["path"], row["type"])
-            row["status"] = EnvStatus.DELETED.value
-            table.update_cell_at((row_index, 5), EnvStatus.DELETED.value)
+            if self.delete_environment(row["environment"]):
+                self.bytes_release += int(row["size"])
+                row["status"] = EnvStatus.DELETED.value
+                table.update_cell_at((row_index, 5), EnvStatus.DELETED.value)
 
         self.query_one("#status-label", Label).update(
             f"{format_size(self.bytes_release)} deleted"
@@ -495,21 +476,23 @@ class TableApp(App):
             row = self.venv_rows[cursor_cell.row]
             if row["status"] == EnvStatus.DELETED.value:
                 return
-            self.bytes_release += int(row["size"])
-            self.delete_environment(row["path"], row["type"])
-            row["status"] = EnvStatus.DELETED.value
-            table.update_cell_at((cursor_cell.row, 5), EnvStatus.DELETED.value)
-            self.query_one("#status-label", Label).update(
-                f"{format_size(self.bytes_release)} deleted"
-            )
+            if self.delete_environment(row["environment"]):
+                self.bytes_release += int(row["size"])
+                row["status"] = EnvStatus.DELETED.value
+                table.update_cell_at((cursor_cell.row, 5), EnvStatus.DELETED.value)
+                self.query_one("#status-label", Label).update(
+                    f"{format_size(self.bytes_release)} deleted"
+                )
         self.bell()
 
     @is_venv_tab
-    def delete_environment(self, path, env_type):
-        if env_type in {".venv", "pyvenv.cfg", "poetry"}:
-            self.killers["venv_killer"].remove_environment(path)
-        else:
-            self.killers["conda_killer"].remove_environment(path)
+    def delete_environment(self, environment: Environment) -> bool:
+        try:
+            self.cleaner.delete(environment)
+            return True
+        except CleanerError as error:
+            self.query_one("#status-label", Label).update(str(error))
+            return False
 
     @is_pipx_tab
     def action_uninstall_pipx(self):
@@ -519,16 +502,12 @@ class TableApp(App):
             row = self.pipx_rows[cursor_cell.row]
             if row["status"] == EnvStatus.DELETED.value:
                 return
-            package = row["package"]
-            size = int(row["size"])
-
-            self.killers["pipx_killer"].remove_environment(package)
-
-            row["status"] = EnvStatus.DELETED.value
-            table.update_cell_at((cursor_cell.row, 3), EnvStatus.DELETED.value)
-            self.bytes_release += size
-            self.query_one("#status-label", Label).update(
-                f"{format_size(self.bytes_release)} deleted"
-            )
+            if self.delete_environment(row["environment"]):
+                row["status"] = EnvStatus.DELETED.value
+                table.update_cell_at((cursor_cell.row, 3), EnvStatus.DELETED.value)
+                self.bytes_release += int(row["size"])
+                self.query_one("#status-label", Label).update(
+                    f"{format_size(self.bytes_release)} deleted"
+                )
 
         self.bell()

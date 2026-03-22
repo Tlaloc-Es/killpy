@@ -29,6 +29,25 @@ dev = [
 [tool.uv]
 package = true
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short --cov=killpy --cov-report=term-missing --cov-report=xml"
+
+[tool.coverage.run]
+branch = true
+source = ["killpy"]
+omit = ["killpy/cli.py", "killpy/__main__.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "raise NotImplementedError",
+]
+
 [tool.commitizen]
 name = "cz_conventional_commits"
 version = "0.15.7"

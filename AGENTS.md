@@ -53,18 +53,30 @@ Top-level:
 
 Package layout (`killpy/`):
 
-- `__main__.py` — CLI entrypoint (`killpy` script)
+- `__main__.py` — CLI entrypoint (`killpy` script); registers all subcommands
 - `cli.py` — Textual app (`TableApp`) and interactive actions
-- `commands/clean.py` — `killpy clean` command
-- `cleaners/__init__.py` — cache cleanup logic
+- `models.py` — `Environment` dataclass (shared contract between all layers)
+- `scanner.py` — `Scanner`: orchestrates detectors, deduplicates results
+- `cleaner.py` — `Cleaner`: handles deletion (shutil.rmtree or pipx uninstall)
+- `commands/clean.py` — `killpy clean` subcommand
+- `commands/delete.py` — `killpy delete` subcommand
+- `commands/list.py` — `killpy list` subcommand
+- `commands/stats.py` — `killpy stats` subcommand
+- `cleaners/__init__.py` — `remove_pycache` helper
 - `files/__init__.py` — file-size helpers (`get_total_size`, `format_size`)
-- `killers/`
-  - `killer.py` — abstract base interface
-  - `venv_killer.py` — `.venv` discovery/removal
-  - `pyenv_killer.py` — `pyvenv.cfg`-based discovery
-  - `poetry_killer.py` — Poetry virtualenv discovery
-  - `conda_killer.py` — Conda env discovery/removal
-  - `pipx_killer.py` — pipx package discovery/removal
+- `detectors/` — one detector class per environment type:
+  - `base.py` — `AbstractDetector` interface
+  - `venv.py` — `.venv` dirs and `pyvenv.cfg`-based envs
+  - `pyenv.py` — pyenv-managed Python versions
+  - `poetry.py` — Poetry global virtualenv cache
+  - `conda.py` — Conda environments
+  - `pipx.py` — pipx packages
+  - `hatch.py` — Hatch environments
+  - `pipenv.py` — Pipenv virtualenvs
+  - `tox.py` — tox `.tox` directories
+  - `uv.py` — uv `.uv` directories
+  - `artifacts.py` — build artifacts (`dist/`, `build/`, `*.egg-info`)
+  - `cache.py` — cache dirs (`__pycache__`, `.mypy_cache`, `.pytest_cache`, …)
 
 ## Runtime Flow (Important for Agents)
 
