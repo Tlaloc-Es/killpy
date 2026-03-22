@@ -1,3 +1,9 @@
+## 0.16.0 (2026-03-22)
+
+### Feat
+
+- remove legacy code and clean repository structure
+
 ## 0.15.7 (2026-02-21)
 
 ### Fix

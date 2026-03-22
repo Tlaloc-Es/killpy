@@ -177,7 +177,7 @@ Use `killpy clean` before each commit to remove cache directories:
 
 ```yml
 - repo: https://github.com/Tlaloc-Es/KillPy
-  rev: 0.15.7
+  rev: 0.16.0
   hooks:
     - id: killpy
       pass_filenames: false
