@@ -1,4 +1,7 @@
 import asyncio
+import re
+import subprocess
+import sys
 from datetime import datetime
 from enum import Enum
 from importlib.metadata import PackageNotFoundError, version
@@ -11,6 +14,7 @@ from textual.widgets import (
     DataTable,
     Footer,
     Header,
+    Input,
     Label,
     Static,
     TabbedContent,
@@ -100,7 +104,13 @@ class TableApp(App):
 
     SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
-    def __init__(self, root_dir: Path | None = None, *args: Any, **kwargs: Any):
+    def __init__(
+        self,
+        root_dir: Path | None = None,
+        excluded: set[str] | None = None,
+        *args: Any,
+        **kwargs: Any,
+    ):
         super().__init__(*args, **kwargs)
         self.app_version = self.get_app_version()
         self.root_dir = root_dir or Path.cwd()
@@ -111,6 +121,10 @@ class TableApp(App):
         self._spinner_idx: int = 0
         self._spinner_timer = None
         self._scan_counts: tuple[int, int, int, int] = (0, 0, 0, 0)
+        self._filter_query: str = ""
+        self._venv_display_indices: list[int] = []
+        self._multi_select_mode: bool = False
+        self._selected_venv_indices: set[int] = set()
         self.cleaner = Cleaner()
         self.scanner = Scanner(
             types={
@@ -123,7 +137,8 @@ class TableApp(App):
                 "uv",
                 "pipenv",
                 "tox",
-            }
+            },
+            excluded=excluded or set(),
         )
 
     @staticmethod
@@ -165,6 +180,27 @@ class TableApp(App):
             description="Uninstall pipx packages",
             show=True,
         ),
+        Binding(
+            key="j", action="cursor_down_active", description="Move down", show=False
+        ),
+        Binding(key="k", action="cursor_up_active", description="Move up", show=False),
+        Binding(key="o", action="open_folder", description="Open folder", show=True),
+        Binding(key="slash", action="start_search", description="Filter /", show=True),
+        Binding(
+            key="t",
+            action="toggle_multi_select",
+            description="Multi-select T",
+            show=True,
+        ),
+        Binding(
+            key="space",
+            action="multi_select_toggle_row",
+            description="Select row",
+            show=False,
+        ),
+        Binding(
+            key="a", action="multi_select_all", description="Select all", show=False
+        ),
     ]
 
     CSS = """
@@ -188,6 +224,25 @@ class TableApp(App):
     #selected-path-label {
         height: 1;
         color: $text-muted;
+    }
+
+    #search-input {
+        display: none;
+        height: 1;
+    }
+
+    #search-input.visible {
+        display: block;
+    }
+
+    #multi-select-label {
+        display: none;
+        height: 1;
+        color: yellow;
+    }
+
+    #multi-select-label.visible {
+        display: block;
     }
 
     TabbedContent #--content-tab-venv-tab {
@@ -216,6 +271,11 @@ class TableApp(App):
         yield Static("", id="loading-display")
         yield Label("", id="status-label")
         yield Label("", id="selected-path-label")
+        yield Input(
+            placeholder="Filter by path (regex)… Esc to clear",
+            id="search-input",
+        )
+        yield Label("", id="multi-select-label")
 
         with TabbedContent():
             with TabPane("Environments", id="venv-tab"):
@@ -247,6 +307,7 @@ class TableApp(App):
         venv_table.focus()
 
     def add_venv_environment(self, environment: Environment) -> None:
+        data_index = len(self.venv_rows)
         self.venv_rows.append(
             {
                 "path": str(environment.path),
@@ -258,12 +319,16 @@ class TableApp(App):
                 "environment": environment,
             }
         )
+        self._venv_display_indices.append(data_index)
 
         table = self.query_one("#venv-table", DataTable)
         row = self.venv_rows[-1]
+        type_label = ("\u26a0\ufe0f " if environment.is_system_critical else "") + row[
+            "type"
+        ]
         table.add_row(
             shorten_path_for_table(row["path"]),
-            row["type"],
+            type_label,
             row["last_modified"],
             row["size"],
             row["size_human"],
@@ -289,14 +354,26 @@ class TableApp(App):
         table = self.query_one("#venv-table", DataTable)
         table.clear(columns=True)
         table.add_columns(*self.get_headers_for_table("venv-table"))
-        for row in self.venv_rows:
+        self._venv_display_indices = []
+        for i, row in enumerate(self.venv_rows):
+            if self._filter_query:
+                try:
+                    if not re.search(self._filter_query, row["path"], re.IGNORECASE):
+                        continue
+                except re.error:
+                    pass  # invalid regex — show all
+            self._venv_display_indices.append(i)
+            env = row["environment"]
+            type_label = ("\u26a0\ufe0f " if env.is_system_critical else "") + row[
+                "type"
+            ]
             table.add_row(
                 shorten_path_for_table(row["path"]),
-                row["type"],
+                type_label,
                 row["last_modified"],
                 row["size"],
                 row["size_human"],
-                row["status"],
+                self._compute_row_status(i, row),
             )
 
     def render_pipx_table(self) -> None:
@@ -305,6 +382,42 @@ class TableApp(App):
         table.add_columns(*self.get_headers_for_table("pipx-table"))
         for row in self.pipx_rows:
             table.add_row(row["package"], row["size"], row["size_human"], row["status"])
+
+    # ------------------------------------------------------------------ #
+    #  Row resolution helpers (filter-aware)                              #
+    # ------------------------------------------------------------------ #
+
+    def _resolve_venv_row(self, display_row: int) -> tuple[int, VenvRow] | None:
+        """Return (data_index, row_dict) for *display_row*, or None when out of range."""  # noqa: E501
+        if 0 <= display_row < len(self._venv_display_indices):
+            data_index = self._venv_display_indices[display_row]
+            return data_index, self.venv_rows[data_index]
+        return None
+
+    def _compute_row_status(self, data_index: int, row: VenvRow) -> str:
+        """Return the status string to display, taking multi-select into account."""
+        if row["status"] == EnvStatus.DELETED.value:
+            return EnvStatus.DELETED.value
+        if self._multi_select_mode and data_index in self._selected_venv_indices:
+            return "\u25cf SELECTED"
+        return row["status"]
+
+    def _update_multi_select_label(self) -> None:
+        label = self.query_one("#multi-select-label", Label)
+        if self._multi_select_mode:
+            n = len(self._selected_venv_indices)
+            label.add_class("visible")
+            label.update(
+                f"[bold yellow]Multi-select[/bold yellow] — "
+                f"{n} selected | "
+                "[dim]Space[/dim]: toggle  "
+                "[dim]A[/dim]: all  "
+                "[dim]Ctrl+D[/dim]: delete  "
+                "[dim]T[/dim]: exit"
+            )
+        else:
+            label.remove_class("visible")
+            label.update("")
 
     def get_headers_for_table(self, table_id: str) -> list[str]:
         base_headers = (
@@ -452,21 +565,33 @@ class TableApp(App):
             selected_path_label.update("")
             return
 
-        if 0 <= row_index < len(self.venv_rows):
-            selected_path_label.update(f"Selected: {self.venv_rows[row_index]['path']}")
+        resolved = self._resolve_venv_row(row_index)
+        if resolved:
+            _, row = resolved
+            selected_path_label.update(f"Selected: {row['path']}")
 
     @is_venv_tab
     def action_confirm_delete(self):
-        table = self.query_one("#venv-table", DataTable)
-        for row_index, row in enumerate(self.venv_rows):
-            if row["status"] != EnvStatus.MARKED_TO_DELETE.value:
-                continue
+        if self._multi_select_mode and self._selected_venv_indices:
+            # Multi-select mode: delete all selected rows
+            for data_index in list(self._selected_venv_indices):
+                row = self.venv_rows[data_index]
+                if row["status"] == EnvStatus.DELETED.value:
+                    continue
+                if self.delete_environment(row["environment"]):
+                    self.bytes_release += int(row["size"])
+                    row["status"] = EnvStatus.DELETED.value
+            self._selected_venv_indices.clear()
+        else:
+            # Normal mode: delete all rows marked for deletion
+            for row in self.venv_rows:
+                if row["status"] != EnvStatus.MARKED_TO_DELETE.value:
+                    continue
+                if self.delete_environment(row["environment"]):
+                    self.bytes_release += int(row["size"])
+                    row["status"] = EnvStatus.DELETED.value
 
-            if self.delete_environment(row["environment"]):
-                self.bytes_release += int(row["size"])
-                row["status"] = EnvStatus.DELETED.value
-                table.update_cell_at((row_index, 5), EnvStatus.DELETED.value)
-
+        self.render_venv_table()
         self.query_one("#status-label", Label).update(
             f"{format_size(self.bytes_release)} deleted"
         )
@@ -478,7 +603,10 @@ class TableApp(App):
 
         cursor_cell = table.cursor_coordinate
         if cursor_cell:
-            row = self.venv_rows[cursor_cell.row]
+            resolved = self._resolve_venv_row(cursor_cell.row)
+            if not resolved:
+                return
+            data_index, row = resolved
             current_status = row["status"]
             if current_status == EnvStatus.DELETED.value:
                 return
@@ -496,7 +624,10 @@ class TableApp(App):
         table = self.query_one("#venv-table", DataTable)
         cursor_cell = table.cursor_coordinate
         if cursor_cell:
-            row = self.venv_rows[cursor_cell.row]
+            resolved = self._resolve_venv_row(cursor_cell.row)
+            if not resolved:
+                return
+            data_index, row = resolved
             if row["status"] == EnvStatus.DELETED.value:
                 return
             if self.delete_environment(row["environment"]):
@@ -534,3 +665,130 @@ class TableApp(App):
                 )
 
         self.bell()
+
+    # ------------------------------------------------------------------ #
+    #  New actions: navigation, search, open folder, multi-select         #
+    # ------------------------------------------------------------------ #
+
+    def action_cursor_down_active(self) -> None:
+        """Move cursor down in the currently focused DataTable (j key)."""
+        focused = self.focused
+        if isinstance(focused, DataTable):
+            focused.action_cursor_down()
+        else:
+            active = self.query_one(TabbedContent).active
+            tid = "#venv-table" if active == "venv-tab" else "#pipx-table"
+            self.query_one(tid, DataTable).action_cursor_down()
+
+    def action_cursor_up_active(self) -> None:
+        """Move cursor up in the currently focused DataTable (k key)."""
+        focused = self.focused
+        if isinstance(focused, DataTable):
+            focused.action_cursor_up()
+        else:
+            active = self.query_one(TabbedContent).active
+            tid = "#venv-table" if active == "venv-tab" else "#pipx-table"
+            self.query_one(tid, DataTable).action_cursor_up()
+
+    @is_venv_tab
+    def action_open_folder(self) -> None:
+        """Open the parent directory of the selected environment in the OS file manager."""  # noqa: E501
+        table = self.query_one("#venv-table", DataTable)
+        cursor_cell = table.cursor_coordinate
+        if not cursor_cell:
+            return
+        resolved = self._resolve_venv_row(cursor_cell.row)
+        if not resolved:
+            return
+        _, row = resolved
+        parent = str(Path(row["path"]).parent)
+        try:
+            if sys.platform == "darwin":
+                subprocess.Popen(["open", parent])
+            elif sys.platform == "win32":
+                subprocess.Popen(["explorer", parent])
+            else:
+                subprocess.Popen(["xdg-open", parent])
+        except OSError as exc:
+            self.query_one("#status-label", Label).update(f"Cannot open folder: {exc}")
+
+    def action_start_search(self) -> None:
+        """Show the search/filter input bar and focus it."""
+        search_input = self.query_one("#search-input", Input)
+        search_input.add_class("visible")
+        search_input.focus()
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        if event.input.id == "search-input":
+            self._filter_query = event.value
+            self.render_venv_table()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        if event.input.id == "search-input":
+            if not event.value:
+                self._filter_query = ""
+                event.input.remove_class("visible")
+            self.query_one("#venv-table", DataTable).focus()
+
+    def on_key(self, event) -> None:  # type: ignore[override]
+        """Handle Escape to clear and close the search bar."""
+        if event.key == "escape":
+            search_input = self.query_one("#search-input", Input)
+            if "visible" in search_input.classes:
+                self._filter_query = ""
+                search_input.value = ""
+                search_input.remove_class("visible")
+                self.render_venv_table()
+                active = self.query_one(TabbedContent).active
+                tid = "#venv-table" if active == "venv-tab" else "#pipx-table"
+                self.query_one(tid, DataTable).focus()
+                event.stop()
+
+    def action_toggle_multi_select(self) -> None:
+        """Toggle multi-select mode on/off (T key)."""
+        self._multi_select_mode = not self._multi_select_mode
+        if not self._multi_select_mode:
+            self._selected_venv_indices.clear()
+        self._update_multi_select_label()
+        self.render_venv_table()
+
+    @is_venv_tab
+    def action_multi_select_toggle_row(self) -> None:
+        """Toggle current row selection in multi-select mode (Space key)."""
+        if not self._multi_select_mode:
+            return
+        table = self.query_one("#venv-table", DataTable)
+        cursor_cell = table.cursor_coordinate
+        if not cursor_cell:
+            return
+        resolved = self._resolve_venv_row(cursor_cell.row)
+        if not resolved:
+            return
+        data_index, row = resolved
+        if row["status"] == EnvStatus.DELETED.value:
+            return
+        if data_index in self._selected_venv_indices:
+            self._selected_venv_indices.discard(data_index)
+        else:
+            self._selected_venv_indices.add(data_index)
+        self._update_multi_select_label()
+        table.update_cell_at(
+            (cursor_cell.row, 5), self._compute_row_status(data_index, row)
+        )
+
+    @is_venv_tab
+    def action_multi_select_all(self) -> None:
+        """Toggle select-all / deselect-all in multi-select mode (A key)."""
+        if not self._multi_select_mode:
+            return
+        non_deleted = {
+            i
+            for i in self._venv_display_indices
+            if self.venv_rows[i]["status"] != EnvStatus.DELETED.value
+        }
+        if non_deleted == self._selected_venv_indices:
+            self._selected_venv_indices.clear()
+        else:
+            self._selected_venv_indices = non_deleted
+        self._update_multi_select_label()
+        self.render_venv_table()

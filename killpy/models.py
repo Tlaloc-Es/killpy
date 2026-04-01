@@ -48,6 +48,7 @@ class Environment:
     last_accessed: datetime
     size_bytes: int
     managed_by: str | None = None
+    is_system_critical: bool = False
 
     # ------------------------------------------------------------------ #
     #  Computed helpers                                                    #
@@ -77,4 +78,5 @@ class Environment:
             "size_bytes": self.size_bytes,
             "size_human": self.size_human,
             "managed_by": self.managed_by,
+            "is_system_critical": self.is_system_critical,
         }

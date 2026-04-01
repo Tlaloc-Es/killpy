@@ -1,13 +1,15 @@
 <div align="center">
 
-# killpy
+![Logo](logo.png)
 
 ### Reclaim disk space by finding and deleting Python environments you no longer use
 
 [![PyPI](https://img.shields.io/pypi/v/killpy.svg)](https://pypi.org/project/killpy/)
+[![Python](https://img.shields.io/pypi/pyversions/killpy.svg)](https://pypi.org/project/killpy/)
 [![Downloads](https://static.pepy.tech/personalized-badge/killpy?period=month&units=international_system&left_color=grey&right_color=blue&left_text=PyPi%20Downloads)](https://pepy.tech/project/killpy)
 [![Stars](https://img.shields.io/github/stars/Tlaloc-Es/killpy?color=yellow&style=flat)](https://github.com/Tlaloc-Es/killpy/stargazers)
 [![Coverage](https://codecov.io/gh/Tlaloc-Es/killpy/branch/master/graph/badge.svg)](https://codecov.io/gh/Tlaloc-Es/killpy)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](<https://twitter.com/intent/tweet?text=%F0%9F%90%8D%20KillPy%20helps%20you%20reclaim%20disk%20space%20by%20detecting%20unused%20Python%20environments%20(.venv,%20poetry%20env,%20conda%20env)%20and%20pipx%20packages.%20Clean,%20organize%20and%20free%20up%20space%20effortlessly!%20%F0%9F%9A%80&url=https://github.com/Tlaloc-Es/KillPy>)
 
 ![killpy in action](show.gif)
@@ -24,13 +26,14 @@ Every project gets a `.venv`. Every tutorial leaves a Conda environment behind. 
 
 **None of these get cleaned up automatically.**
 
-A typical developer machine accumulates **10-40 GB** of Python environments over a few years — most of them abandoned and completely useless.
+A typical developer machine accumulates **10–40 GB** of Python environments over a few years — most of them abandoned and completely useless.
 
-`killpy` scans your filesystem, shows you everything with its size, and lets you delete it — either from an interactive terminal UI or via a single command.
+`killpy` scans your filesystem, shows you everything with its size, and lets you delete it — either from a slick interactive terminal UI or via a single headless command.
 
 ```bash
-pip install killpy
-killpy --path ~
+pipx run killpy --path ~
+# or
+uvx killpy --path ~
 ```
 
 ______________________________________________________________________
@@ -57,25 +60,7 @@ ______________________________________________________________________
 
 ## Quickstart
 
-**Install:**
-
-```bash
-pip install killpy
-```
-
-**Run the interactive TUI** (scans current directory):
-
-```bash
-killpy
-```
-
-**Scan your entire home folder** to find everything:
-
-```bash
-killpy --path ~
-```
-
-**No install required:**
+**Instant run — no install needed:**
 
 ```bash
 pipx run killpy
@@ -83,54 +68,150 @@ pipx run killpy
 uvx killpy
 ```
 
+**Install permanently:**
+
+```bash
+pip install killpy
+# or
+pipx install killpy
+# or
+uv tool install killpy
+```
+
+**Scan current directory:**
+
+```bash
+killpy
+```
+
+**Scan your entire home folder:**
+
+```bash
+killpy --path ~
+```
+
+**Exclude paths matching a pattern:**
+
+```bash
+killpy --path ~ --exclude "backups,archive,work"
+```
+
+**Delete everything non-interactively (CI / scripts):**
+
+```bash
+killpy --path ~/projects --delete-all --yes
+```
+
 ______________________________________________________________________
 
 ## Interactive TUI
 
-Launch the terminal UI to browse and delete environments visually:
-
 ```bash
 killpy
 killpy --path /path/to/scan
+killpy --path ~ --exclude "company-projects"
 ```
 
-The TUI starts immediately and streams results as detectors finish. Select items, mark them for deletion, and confirm — nothing is deleted without explicit action.
+The TUI starts immediately and streams results as each detector finishes — no waiting for a full scan before you can start browsing. Select items, mark them, and confirm; **nothing is deleted without explicit action**.
+
+Environments flagged with `⚠️` are actively in use by the current Python session — killpy will show them but they should not be deleted.
 
 ### Keyboard shortcuts
 
 | Key | Action |
 |-----|--------|
+| `↑` / `↓` or `k` / `j` | Move cursor up / down (vim-style) |
+| `/` | Open live search/filter bar (regex supported) |
+| `Escape` | Close search bar and clear filter |
+| `T` | Toggle multi-select mode on / off |
+| `Space` | *(Multi-select)* Toggle current row selected |
+| `A` | *(Multi-select)* Select all visible / deselect all |
+| `D` | Mark highlighted item for deletion |
+| `Ctrl+D` | Delete all marked items (or all selected in multi-select mode) |
+| `Shift+Delete` | Delete highlighted item immediately, no mark step |
+| `o` | Open the item's parent folder in the OS file manager |
+| `P` | Remove all `__pycache__` folders under the scanned path |
+| `U` | Uninstall the selected `pipx` package |
 | `Ctrl+Q` | Quit |
-| `D` | Mark selected item for deletion |
-| `Ctrl+D` | Delete all marked items |
-| `Shift+Delete` | Delete selected item immediately |
-| `P` | Remove all `__pycache__` folders |
-| `U` | Uninstall selected `pipx` package |
+
+### Search / filter
+
+Press `/` to open the filter bar at the bottom of the screen. Type any string or a Python regex — the venv table updates live as you type. Press `Escape` or submit an empty value to clear the filter and return to the full list.
+
+### Multi-select mode
+
+Press `T` to enter multi-select mode. A status bar shows the current selection count.
+
+- `Space` — toggle the highlighted row
+- `A` — select all visible non-deleted rows (press again to deselect all)
+- `Ctrl+D` — delete every selected row in one operation
+- `T` again — exit multi-select mode (selection is cleared)
+
+Multi-select coexists with the existing `D` / `Ctrl+D` mark-and-delete flow — both work independently.
 
 ______________________________________________________________________
 
 ## CLI reference
 
+### `killpy` — launch TUI or headless delete
+
+```
+Usage: killpy [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --path DIRECTORY      Root directory to scan  [default: cwd]
+  -E, --exclude TEXT    Comma-separated path patterns to skip
+                        e.g. --exclude "backups,legacy"
+  -D, --delete-all      Scan and delete ALL found environments without
+                        launching the TUI
+  -y, --yes             Skip confirmation prompt (use with --delete-all)
+  --help                Show this message and exit.
+```
+
+Examples:
+
+```bash
+killpy                                        # TUI, scan cwd
+killpy --path ~                               # TUI, scan home
+killpy --path ~/projects --exclude "legacy"   # TUI, skip paths with "legacy"
+killpy --path ~/projects --delete-all         # headless, with confirmation
+killpy --path ~/projects --delete-all --yes   # fully automated, no prompt
+```
+
+______________________________________________________________________
+
 ### `killpy list` — inspect environments
 
 ```bash
-killpy list                             # list all detected environments
-killpy list --path ~/projects           # scan a specific path
-killpy list --type venv --type conda    # filter by type (repeatable)
-killpy list --older-than 90             # not accessed in the last 90 days
-killpy list --json                      # machine-readable JSON output
+killpy list                               # list all detected environments
+killpy list --path ~/projects             # scan a specific path
+killpy list --type venv --type conda      # filter by type (repeatable)
+killpy list --older-than 90               # not accessed in the last 90 days
+killpy list --json                        # output as a JSON array
+killpy list --json-stream                 # stream as NDJSON — one line per env
 ```
+
+`--json-stream` is ideal for piping into `jq` or processing in scripts before the full scan completes:
+
+```bash
+killpy list --json-stream --path ~ | jq 'select(.type == "conda") | .size_human'
+```
+
+______________________________________________________________________
 
 ### `killpy delete` — remove environments
 
 ```bash
-killpy delete                           # interactive confirmation before delete
-killpy delete --yes                     # skip confirmation
-killpy delete --dry-run                 # preview — nothing is deleted
-killpy delete --type venv               # only a specific type
-killpy delete --older-than 180 --yes    # delete stale envs, no prompt
+killpy delete                             # interactive confirmation before delete
+killpy delete --yes                       # skip confirmation
+killpy delete --dry-run                   # preview — nothing is deleted
+killpy delete --type venv                 # only a specific type
+killpy delete --type venv --type cache    # multiple types
+killpy delete --older-than 180 --yes      # delete stale envs, no prompt
 killpy delete --path ~/projects
 ```
+
+______________________________________________________________________
 
 ### `killpy stats` — disk usage summary
 
@@ -156,6 +237,8 @@ Example output:
 Total: 66 environment(s) — 7.9 GB
 ```
 
+______________________________________________________________________
+
 ### `killpy clean` — remove cache directories
 
 ```bash
@@ -163,19 +246,19 @@ killpy clean
 killpy clean --path ~/projects
 ```
 
-Removes `__pycache__` directories recursively. Safe to use as a pre-commit hook.
+Removes `__pycache__` directories recursively under the target path.
 
 ______________________________________________________________________
 
 ## killpy vs alternatives
 
-| Tool | venv | conda | poetry | pipx | pyenv | caches | artifacts | TUI | CLI |
-|------|:----:|:-----:|:------:|:----:|:-----:|:------:|:---------:|:---:|:---:|
-| **killpy** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `pyclean` | ❌ | ❌ | ❌ | ❌ | ❌ | `__pycache__` only | ❌ | ❌ | ✅ |
-| `conda clean` | ❌ | partial | ❌ | ❌ | ❌ | conda only | ❌ | ❌ | ✅ |
-| `pip cache purge` | ❌ | ❌ | ❌ | ❌ | ❌ | pip only | ❌ | ❌ | ✅ |
-| `find . -name .venv -exec rm` | venv only | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | manual |
+| Tool | venv | conda | poetry | pipx | pyenv | caches | artifacts | TUI | search | multi-select |
+|------|:----:|:-----:|:------:|:----:|:-----:|:------:|:---------:|:---:|:------:|:------------:|
+| **killpy** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `pyclean` | ❌ | ❌ | ❌ | ❌ | ❌ | `__pycache__` only | ❌ | ❌ | ❌ | ❌ |
+| `conda clean` | ❌ | partial | ❌ | ❌ | ❌ | conda only | ❌ | ❌ | ❌ | ❌ |
+| `pip cache purge` | ❌ | ❌ | ❌ | ❌ | ❌ | pip only | ❌ | ❌ | ❌ | ❌ |
+| `find . -name .venv -exec rm` | venv only | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 No other single tool discovers, sizes, and removes environments across **all** major Python toolchains.
 
@@ -185,15 +268,45 @@ ______________________________________________________________________
 
 **My Mac/Linux disk is almost full — can killpy help?**
 
-Yes. Run `killpy --path ~` to scan your home folder. The `stats` command gives an immediate breakdown of how many GB each env type is using. Most developers find 5-30 GB they can reclaim.
+Yes. Run `killpy --path ~` to scan your home folder. The `stats` command gives an immediate breakdown of how many GB each env type is consuming. Most developers reclaim 5–30 GB.
 
-**How do I delete all unused Python virtual environments at once?**
+**How do I delete all unused virtual environments at once?**
 
 ```bash
 killpy delete --type venv --older-than 90 --yes
 ```
 
-This deletes every `.venv` / `pyvenv.cfg` env not accessed in the last 90 days, without prompting.
+Deletes every `.venv` / `pyvenv.cfg` env not accessed in the last 90 days, without prompting.
+
+**How do I use killpy in a CI pipeline or script?**
+
+```bash
+# List as machine-readable JSON
+killpy list --json
+
+# Stream results as NDJSON in real time
+killpy list --json-stream | jq '.size_bytes'
+
+# Delete everything without a TUI
+killpy --path ./build_artifacts --delete-all --yes
+```
+
+**How do I skip certain directories?**
+
+```bash
+killpy --path ~ --exclude "company,production,do-not-touch"
+```
+
+Any environment whose path contains one of the comma-separated patterns is silently skipped.
+
+**How do I clean up Poetry virtualenvs?**
+
+Poetry stores virtualenvs in `~/.cache/pypoetry/virtualenvs`. killpy detects and deletes them automatically — no manual path hunting required.
+
+```bash
+killpy list --type poetry
+killpy delete --type poetry --older-than 60
+```
 
 **How do I find all `.venv` folders on my computer?**
 
@@ -216,9 +329,13 @@ killpy delete --type conda      # delete selected
 
 `killpy` runs `conda env list` internally and lets you delete individual environments. Alternatively, `killpy --path ~` will surface them in the TUI.
 
-**How do I clean up Poetry virtualenvs?**
+**Can I combine filters?**
 
-Poetry stores virtualenvs in `~/.cache/pypoetry/virtualenvs`. `killpy` detects and deletes them automatically — no manual path hunting required.
+Yes. For example:
+
+```bash
+killpy delete --type venv --older-than 90 --dry-run
+```
 
 **How do I remove all `__pycache__` folders recursively?**
 
@@ -226,35 +343,19 @@ Poetry stores virtualenvs in `~/.cache/pypoetry/virtualenvs`. `killpy` detects a
 killpy clean --path /path/to/project
 ```
 
-Removes `__pycache__` directories recursively under the target path.
+Or press `P` in the TUI to clean them for the scanned path.
 
-## Safety
+**What does ⚠️ mean next to an environment?**
 
-`killpy` performs destructive actions (environment/package/cache deletion).
-Always review selected items before confirming removal.
-You are responsible for files deleted on your system.
-
-## Pre-commit hook
-
-Use `killpy clean` before each commit to remove cache directories:
-
-```yml
-- repo: https://github.com/Tlaloc-Es/KillPy
-  rev: 0.15.7
-  hooks:
-    - id: killpy
-      pass_filenames: false
-```
-
-## FAQ
+The environment is currently in use by the Python session running killpy. It should not be deleted. killpy will still show it so you are aware of it, but treat it with care.
 
 **Does it fail if Conda, pipx or pyenv are not installed?**
 
-Missing tools are handled gracefully — that detector is simply skipped. You get results for everything that is available.
+No. Missing tools are handled gracefully — that detector is simply skipped. You get results for everything that is available on the system.
 
-**Does it auto-delete anything?**
+**Does killpy auto-delete anything?**
 
-Never. Deletion always requires an explicit action: a key press in the TUI, `--yes` on the CLI, or an interactive prompt. `killpy` is read-only on startup.
+Never. Deletion always requires an explicit action: a key press in the TUI, `--yes` on the CLI, or an interactive prompt. killpy is fully read-only on startup.
 
 **Can I preview what would be deleted without actually deleting?**
 
@@ -264,21 +365,9 @@ killpy delete --dry-run
 
 Nothing is removed. You see exactly what would happen.
 
-**Can I use it in CI or scripts?**
-
-Yes. `killpy list --json` is machine-readable. `killpy delete --yes` skips all prompts.
-
-**Can I combine filters?**
-
-Yes. For example:
-
-```bash
-killpy delete --type venv --older-than 90 --dry-run
-```
-
 **Why is Python using so much disk space?**
 
-Each virtual environment is a full copy (or symlinked tree) of a Python interpreter plus all installed packages. A typical project `.venv` with common dependencies (Django, FastAPI, pandas, etc.) weighs 200 MB - 1 GB. Multiply by dozens of projects and you get tens of gigabytes — all orphaned when the project is archived.
+Each virtual environment is a full copy (or symlinked tree) of a Python interpreter plus all installed packages. A typical project `.venv` with common dependencies weighs 200 MB–1 GB. Multiply by dozens of projects and you get tens of gigabytes — all orphaned when the project is archived.
 
 ______________________________________________________________________
 
@@ -288,7 +377,7 @@ Keep your repo free of `__pycache__` on every commit:
 
 ```yaml
 - repo: https://github.com/Tlaloc-Es/KillPy
-  rev: 0.15.7
+  rev: 0.16.0
   hooks:
     - id: killpy
       pass_filenames: false
@@ -298,10 +387,9 @@ ______________________________________________________________________
 
 ## Safety
 
-`killpy` performs **destructive, irreversible** actions.
-Always review the selection before confirming removal.
-The `--dry-run` flag lets you preview everything safely.
-You are responsible for files deleted on your system.
+`killpy` performs **destructive, irreversible** actions. Always review the selection before confirming removal. The `--dry-run` flag lets you preview everything safely. Environments marked `⚠️` are actively in use and should not be deleted.
+
+**You are responsible for files deleted on your system.**
 
 ______________________________________________________________________
 
@@ -311,34 +399,26 @@ ______________________________________________________________________
 - [ ] `killpy list --sort size|date|name`
 - [ ] `killpy delete --interactive` — checkbox-style selector in the CLI
 - [ ] Shell completions (bash, zsh, fish)
-- [ ] TUI: filter panel, live progress bar, confirmation dialog with total bytes
 - [ ] Config file (`~/.config/killpy/config.toml`) for default scan path and ignored dirs
 - [ ] `killpy export` — save scan results to JSON/CSV for auditing
 - [ ] Windows support improvements (pyenv-win, conda on Windows PATH)
+- [ ] TUI: filter panel, live progress bar, confirmation dialog with total bytes before delete
 - [ ] Detect unused dependencies inside `pyproject.toml` / `requirements.txt`
 
 ______________________________________________________________________
 
 ## Contributing
 
-Contributions are welcome.
-
-1. Fork the repository
-1. Create a branch: `git checkout -b my-feature`
-1. Commit your changes: `git commit -m 'Add my feature'`
-1. Run the tests: `uv run pytest`
-1. Push your branch: `git push origin my-feature`
-1. Open a pull request
-
-Project behavior and guardrails are documented in [AGENTS.md](AGENTS.md).
-
-Useful local checks:
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide — setup, workflow, how to add a new detector, and GIF recording instructions.
 
 ```bash
+# Quick local checks
 uv run python -m compileall killpy
 uv run pytest
 pre-commit run --all-files
 ```
+
+Project architecture and guardrails are documented in [AGENTS.md](AGENTS.md).
 
 ______________________________________________________________________
 

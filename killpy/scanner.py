@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
 from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 
@@ -43,6 +44,7 @@ class Scanner:
         self,
         detectors: list[AbstractDetector] | None = None,
         types: set[str] | None = None,
+        excluded: set[str] | None = None,
     ) -> None:
         if detectors is not None:
             self._detectors = detectors
@@ -51,6 +53,8 @@ class Scanner:
 
         if types is not None:
             self._detectors = [d for d in self._detectors if d.name in types]
+
+        self._excluded: set[str] = excluded or set()
 
     # ------------------------------------------------------------------ #
     #  Public API                                                          #
@@ -91,6 +95,9 @@ class Scanner:
                 found = []
 
             deduped = self._deduplicate(found, seen)
+            deduped = self._apply_exclusions(deduped)
+            for env in deduped:
+                self._mark_system_critical(env)
             results.extend(deduped)
 
             if on_progress is not None:
@@ -128,6 +135,9 @@ class Scanner:
         for coro in asyncio.as_completed(tasks):
             detector, found = await coro
             deduped = self._deduplicate(found, seen)
+            deduped = self._apply_exclusions(deduped)
+            for env in deduped:
+                self._mark_system_critical(env)
             yield detector, deduped
 
     # ------------------------------------------------------------------ #
@@ -151,3 +161,40 @@ class Scanner:
                 seen.add(resolved)
                 result.append(env)
         return result
+
+    def _apply_exclusions(self, envs: list[Environment]) -> list[Environment]:
+        """Remove environments whose path contains any of the excluded patterns."""
+        if not self._excluded:
+            return envs
+        return [
+            e
+            for e in envs
+            if not any(pattern in str(e.path) for pattern in self._excluded)
+        ]
+
+    @staticmethod
+    def _mark_system_critical(env: Environment) -> None:
+        """Flag an environment as system-critical when it is the currently active env.
+
+        Uses ``sys.prefix`` (the root of the running venv/interpreter) so that only
+        the exact environment killpy itself is running inside is flagged — not every
+        venv that happens to share the same base Python binary.
+        """
+        try:
+            active_prefix = Path(sys.prefix).resolve()
+            if env.path.resolve() == active_prefix:
+                env.is_system_critical = True
+                return
+        except OSError:
+            pass
+
+        if env.type == "pyenv":
+            global_version_file = Path.home() / ".pyenv" / "version"
+            try:
+                global_version = global_version_file.read_text().strip()
+                if global_version and (
+                    env.name == global_version or str(env.path).endswith(global_version)
+                ):
+                    env.is_system_critical = True
+            except OSError:
+                pass

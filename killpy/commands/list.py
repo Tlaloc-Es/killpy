@@ -61,6 +61,13 @@ def _filter_envs(
     help="Only show environments not accessed in the last N days.",
 )
 @click.option(
+    "--json-stream",
+    "as_json_stream",
+    is_flag=True,
+    default=False,
+    help="Stream results as NDJSON (one JSON line per env) in real time.",
+)
+@click.option(
     "--json",
     "as_json",
     is_flag=True,
@@ -72,9 +79,20 @@ def list_cmd(
     types: tuple[str, ...],
     older_than: int | None,
     as_json: bool,
+    as_json_stream: bool,
 ) -> None:
     """List all detected Python environments under PATH."""
     scanner = Scanner(types=set(types) if types else None)
+
+    if as_json_stream:
+
+        def _stream_progress(_detector, envs):
+            for env in _filter_envs(envs, types or None, older_than):
+                click.echo(json.dumps(env.to_dict()))
+
+        scanner.scan(path, on_progress=_stream_progress)
+        return
+
     envs = scanner.scan(path)
     envs = _filter_envs(envs, types or None, older_than)
 
