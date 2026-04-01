@@ -1,3 +1,9 @@
+## 0.17.0 (2026-04-01)
+
+### Feat
+
+- **cli**: enhance loading display with spinner and progress
+
 ## 0.16.0 (2026-03-22)
 
 ### Feat
