@@ -1,3 +1,9 @@
+## 0.18.0 (2026-04-01)
+
+### Feat
+
+- expand Python version support to 3.10+
+
 ## 0.17.0 (2026-04-01)
 
 ### Feat
