@@ -7,13 +7,11 @@ from typing import Any, TypedDict
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Horizontal
 from textual.widgets import (
     DataTable,
     Footer,
     Header,
     Label,
-    LoadingIndicator,
     Static,
     TabbedContent,
     TabPane,
@@ -100,6 +98,8 @@ class TableApp(App):
     PIPX_COL_SIZE_HUMAN = 2
     PIPX_COL_STATUS = 3
 
+    SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
     def __init__(self, root_dir: Path | None = None, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.app_version = self.get_app_version()
@@ -108,8 +108,23 @@ class TableApp(App):
         self.pipx_rows: list[PipxRow] = []
         self.sort_state: dict[str, tuple[int, bool]] = {}
         self.bytes_release: int = 0
+        self._spinner_idx: int = 0
+        self._spinner_timer = None
+        self._scan_counts: tuple[int, int, int, int] = (0, 0, 0, 0)
         self.cleaner = Cleaner()
-        self.scanner = Scanner(types={"venv", "pyenv", "poetry", "conda", "pipx"})
+        self.scanner = Scanner(
+            types={
+                "venv",
+                "pyenv",
+                "poetry",
+                "conda",
+                "pipx",
+                "hatch",
+                "uv",
+                "pipenv",
+                "tox",
+            }
+        )
 
     @staticmethod
     def get_app_version() -> str:
@@ -158,17 +173,16 @@ class TableApp(App):
         border: heavy green;
     }
 
-    #loading-row {
-        height: 1;
-    }
-
-    #scan-loading {
-        width: 3;
-        height: 1;
+    #loading-display {
+        height: 3;
+        border: round green;
+        padding: 0 1;
+        color: green;
     }
 
     #status-label {
         height: 1;
+        color: $text-muted;
     }
 
     #selected-path-label {
@@ -199,13 +213,12 @@ class TableApp(App):
             id="banner",
         )
         yield banner
-        with Horizontal(id="loading-row"):
-            yield LoadingIndicator(id="scan-loading")
-            yield Label("Preparing scan...", id="status-label")
+        yield Static("", id="loading-display")
+        yield Label("", id="status-label")
         yield Label("", id="selected-path-label")
 
         with TabbedContent():
-            with TabPane("Virtual Env", id="venv-tab"):
+            with TabPane("Environments", id="venv-tab"):
                 yield DataTable(id="venv-table")
             with TabPane("Pipx", id="pipx-tab"):
                 yield DataTable(id="pipx-table")
@@ -367,13 +380,25 @@ class TableApp(App):
         else:
             self.sort_pipx_rows(column_index, reverse)
 
+    def _tick_spinner(self) -> None:
+        self._spinner_idx = (self._spinner_idx + 1) % len(self.SPINNER_FRAMES)
+        frame = self.SPINNER_FRAMES[self._spinner_idx]
+        completed, total, venv_count, pipx_count = self._scan_counts
+        progress_str = f"({completed}/{total})" if total else ""
+        self.query_one("#loading-display", Static).update(
+            f"{frame}  [bold]Scanning environments...[/bold]  [dim]{progress_str}[/dim]\n"  # noqa: E501
+            f"   [yellow]{venv_count}[/yellow] environments found"
+            f"  ·  [cyan]{pipx_count}[/cyan] pipx packages found"
+        )
+
     async def load_initial_data(self) -> None:
+        loading_display = self.query_one("#loading-display", Static)
         status_label = self.query_one("#status-label", Label)
-        loading = self.query_one("#scan-loading", LoadingIndicator)
         self.setup_tables()
 
-        status_label.update("Scanning environments...")
-        loading.display = True
+        self._scan_counts = (0, 0, 0, 0)
+        loading_display.display = True
+        self._spinner_timer = self.set_interval(0.08, self._tick_spinner)  # type: ignore[assignment]
 
         applicable_detectors = [
             detector for detector in self.scanner._detectors if detector.can_handle()
@@ -400,12 +425,10 @@ class TableApp(App):
                     self.add_venv_environment(environment)
                     venv_count += 1
             completed_tasks += 1
-            status_label.update(
-                f"Scanning ({completed_tasks}/{total_tasks})... "
-                f"{venv_count} virtual environments, {pipx_count} pipx packages"
-            )
+            self._scan_counts = (completed_tasks, total_tasks, venv_count, pipx_count)
 
-        loading.display = False
+        self._spinner_timer.stop()  # type: ignore[attr-defined]
+        loading_display.display = False
         status_label.update(
             f"Found {venv_count} virtual environments and {pipx_count} pipx packages"
         )

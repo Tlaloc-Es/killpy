@@ -12,6 +12,9 @@ wheels/
 # Environment variables
 .env
 
+# Test
+demo_projects/
+
 # Coverage / pytest-cov outputs
 .coverage
 coverage.xml
