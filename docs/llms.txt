@@ -1,0 +1,55 @@
+# killpy
+
+> Canonical project docs for `killpy`, a Python environment cleaner and disk usage CLI/TUI.
+
+## Project summary
+
+`killpy` helps developers find, inspect, and remove unused Python environments and related disk usage.
+
+It supports detection for:
+
+- virtualenv and `.venv` directories
+- directories containing `pyvenv.cfg`
+- Conda environments
+- Poetry environments
+- `pipx` package environments
+- `pyenv` versions
+- Pipenv, Hatch, tox, and uv environments
+- cache directories and Python build artifacts in scanner and CLI flows
+
+## Product facts
+
+- Primary audience: Python developers and CLI users trying to free disk space
+- Interfaces: Textual TUI plus scriptable CLI commands
+- Key commands: `killpy`, `killpy list`, `killpy delete`, `killpy stats`, `killpy clean`
+- Safety model: scanning is non-destructive; external tools are used for Conda and `pipx` deletion when possible
+- TUI scope: environment results plus a dedicated `pipx` tab
+- `killpy clean` scope: recursive `__pycache__` removal under a target path
+
+## Recommended pages
+
+- Home: /killpy/
+- Quickstart: /killpy/getting-started/quickstart/
+- Installation: /killpy/getting-started/installation/
+- CLI: /killpy/user-guide/cli/
+- TUI: /killpy/user-guide/tui/
+- Use cases: /killpy/user-guide/use-cases/
+- FAQ: /killpy/user-guide/faq/
+- Detector types: /killpy/reference/detector-types/
+- JSON output: /killpy/reference/json-output/
+- Architecture: /killpy/architecture/overview/
+
+## Repository
+
+- GitHub: https://github.com/Tlaloc-Es/killpy
+- Docs: https://tlaloc-es.github.io/killpy/
+- PyPI: https://pypi.org/project/killpy/
+
+## Search intents
+
+- delete old Python virtual environments
+- find unused Conda environments
+- inspect Poetry environment size
+- clean `pipx` package environments
+- remove Python caches and build artifacts
+- free disk space from Python tooling

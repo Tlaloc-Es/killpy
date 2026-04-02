@@ -4,6 +4,10 @@
 
 ### Reclaim disk space by finding and deleting Python environments you no longer use
 
+Python environment cleaner for virtualenv, Conda, Poetry, pipx, pyenv, tox, Pipenv, Hatch, uv, caches, and build artifacts.
+
+[Documentation](https://tlaloc-es.github.io/killpy/)
+
 [![PyPI](https://img.shields.io/pypi/v/killpy.svg)](https://pypi.org/project/killpy/)
 [![Python](https://img.shields.io/pypi/pyversions/killpy.svg)](https://pypi.org/project/killpy/)
 [![Downloads](https://static.pepy.tech/personalized-badge/killpy?period=month&units=international_system&left_color=grey&right_color=blue&left_text=PyPi%20Downloads)](https://pepy.tech/project/killpy)
@@ -30,15 +34,22 @@ A typical developer machine accumulates **10–40 GB** of Python environments ov
 
 `killpy` scans your filesystem, shows you everything with its size, and lets you delete it — either from a slick interactive terminal UI or via a single headless command.
 
+That makes it useful if you are trying to:
+
+- find old Python virtual environments
+- delete unused Conda environments
+- inspect Poetry environment disk usage
+- clean up `pipx` package environments
+- remove Python caches and build artifacts
+- free disk space consumed by Python development tools
+
 ```bash
 pipx run killpy --path ~
 # or
 uvx killpy --path ~
 ```
 
-______________________________________________________________________
-
-## What killpy detects
+### What killpy detects
 
 `killpy` supports **11 environment types** across every major Python tool:
 
@@ -101,6 +112,8 @@ killpy --path ~ --exclude "backups,archive,work"
 ```bash
 killpy --path ~/projects --delete-all --yes
 ```
+
+More documentation: [https://tlaloc-es.github.io/killpy/](https://tlaloc-es.github.io/killpy/)
 
 ______________________________________________________________________
 

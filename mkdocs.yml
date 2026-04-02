@@ -1,0 +1,54 @@
+site_name: killpy
+site_description: Python environment cleaner and CLI to find, inspect, and remove virtualenv, Conda, Poetry, pipx, pyenv, tox, Hatch, Pipenv, uv environments, plus caches and build artifacts.
+site_author: Tlaloc-Es
+site_url: https://tlaloc-es.github.io/killpy/
+repo_url: https://github.com/Tlaloc-Es/killpy
+repo_name: Tlaloc-Es/killpy
+edit_uri: edit/master/docs/
+
+theme:
+  name: material
+  language: en
+  logo: assets/images/logo.png
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - tables
+
+plugins:
+  - search
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Quickstart: getting-started/quickstart.md
+      - Installation: getting-started/installation.md
+  - User Guide:
+      - TUI: user-guide/tui.md
+      - CLI: user-guide/cli.md
+      - Use Cases: user-guide/use-cases.md
+      - FAQ: user-guide/faq.md
+      - Filtering and Selection: user-guide/filtering-and-selection.md
+      - Troubleshooting: user-guide/troubleshooting.md
+  - Reference:
+      - Detector Types: reference/detector-types.md
+      - JSON Output: reference/json-output.md
+  - Architecture:
+      - Overview: architecture/overview.md
+  - Integrations:
+      - Automation: integrations/automation.md

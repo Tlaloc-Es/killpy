@@ -25,3 +25,4 @@ htmlcov/
 # Build artifacts
 killpy.egg-info/
 KillPy.egg-info/
+site/
