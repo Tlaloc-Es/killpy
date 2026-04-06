@@ -1,6 +1,6 @@
 <div align="center">
 
-![Logo](logo.png)
+![Logo](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/logo.png)
 
 ### Reclaim disk space by finding and deleting Python environments you no longer use
 
@@ -16,7 +16,7 @@ Python environment cleaner for virtualenv, Conda, Poetry, pipx, pyenv, tox, Pipe
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](<https://twitter.com/intent/tweet?text=%F0%9F%90%8D%20KillPy%20helps%20you%20reclaim%20disk%20space%20by%20detecting%20unused%20Python%20environments%20(.venv,%20poetry%20env,%20conda%20env)%20and%20pipx%20packages.%20Clean,%20organize%20and%20free%20up%20space%20effortlessly!%20%F0%9F%9A%80&url=https://github.com/Tlaloc-Es/KillPy>)
 
-![killpy in action](show.gif)
+![killpy in action](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/show.gif)
 
 </div>
 
