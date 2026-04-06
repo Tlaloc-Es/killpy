@@ -1,3 +1,9 @@
+## 0.19.0 (2026-04-06)
+
+### Feat
+
+- add project URLs to pyproject.toml
+
 ## 0.18.0 (2026-04-01)
 
 ### Feat
