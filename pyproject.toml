@@ -14,6 +14,12 @@ classifiers = [
 dependencies = ["click>=8.1.8", "rich>=13.9.4", "textual>=1.0.0"]
 requires-python = ">=3.10"
 
+[project.urls]
+Homepage = "https://github.com/Tlaloc-Es/killpy"
+Documentation = "https://tlaloc-es.github.io/killpy/"
+Repository = "https://github.com/Tlaloc-Es/killpy"
+"Bug Tracker" = "https://github.com/Tlaloc-Es/killpy/issues"
+
 [tool.setuptools]
 license-files = []
 
