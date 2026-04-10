@@ -1,6 +1,6 @@
 [project]
 name = "killpy"
-version = "0.19.1"
+version = "0.19.2"
 description = "List all .venv directories and Conda environments 🐍 on your system and check how much space they are using. You can then choose which ones to delete in order to free up space 🧹."
 readme = "README.md"
 classifiers = [
@@ -63,7 +63,7 @@ exclude_lines = [
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.19.1"
+version = "0.19.2"
 version_files = ["pyproject.toml:version", "README.md:rev:"]
 
 [project.scripts]

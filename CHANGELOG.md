@@ -1,3 +1,9 @@
+## 0.19.2 (2026-04-10)
+
+### Fix
+
+- use timezone-aware datetimes for --older-than filtering
+
 ## 0.19.1 (2026-04-06)
 
 ### Fix
