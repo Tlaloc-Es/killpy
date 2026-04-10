@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from killpy.detectors.base import AbstractDetector
@@ -89,10 +89,11 @@ class CacheDetector(AbstractDetector):
 def _make_cache_env(p: Path, tag: str) -> Environment:
     stat = p.stat()
     size = get_total_size(p)
+    mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
     return Environment(
         path=p,
         name=str(p),
         type=tag,
-        last_accessed=datetime.fromtimestamp(stat.st_mtime),
+        last_accessed=mtime,
         size_bytes=size,
     )

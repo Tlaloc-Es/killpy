@@ -30,7 +30,7 @@ def _filter_envs(
     if older_than is not None:
         cutoff = now - timedelta(days=older_than)
         result = [
-            e for e in result if e.last_accessed.replace(tzinfo=timezone.utc) < cutoff
+            e for e in result if e.last_accessed < cutoff
         ]
 
     return result

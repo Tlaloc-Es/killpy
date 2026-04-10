@@ -7,7 +7,7 @@ stubs ``Scanner`` / ``Cleaner`` to avoid real filesystem scans.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -33,7 +33,7 @@ def _env(
         path=path or Path("/fake/myenv"),
         name=name,
         type=env_type,
-        last_accessed=datetime(2024, 3, 15),
+        last_accessed=datetime(2024, 3, 15, tzinfo=timezone.utc),
         size_bytes=size,
         managed_by=managed_by,
     )
@@ -236,9 +236,8 @@ class TestDeleteFilters:
         assert result.exit_code == 0
 
     def test_older_than_filter(self) -> None:
-        from datetime import datetime, timezone
         old = _env(name="old", env_type="venv")
-        # last_accessed is datetime(2024, 3, 15) — more than 30 days ago relative to test run
+        # last_accessed is datetime(2024, 3, 15, tzinfo=utc) — more than 30 days ago
         result = self._run_delete(["--older-than", "1", "--yes"], [old])
         assert result.exit_code == 0
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import platform
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from killpy.detectors.base import AbstractDetector
@@ -48,12 +48,15 @@ class PipenvDetector(AbstractDetector):
                 try:
                     stat = venv_path.stat()
                     size = get_total_size(venv_path)
+                    mtime = datetime.fromtimestamp(
+                        stat.st_mtime, tz=timezone.utc,
+                    )
                     envs.append(
                         Environment(
                             path=venv_path,
                             name=venv_path.name,
                             type="pipenv",
-                            last_accessed=datetime.fromtimestamp(stat.st_mtime),
+                            last_accessed=mtime,
                             size_bytes=size,
                         )
                     )

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import shutil
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from killpy.detectors.base import AbstractDetector
@@ -64,12 +64,15 @@ class CondaDetector(AbstractDetector):
             try:
                 stat = env_path.stat()
                 size = get_total_size(env_path)
+                mtime = datetime.fromtimestamp(
+                    stat.st_mtime, tz=timezone.utc,
+                )
                 envs.append(
                     Environment(
                         path=env_path,
                         name=env_name,
                         type="conda",
-                        last_accessed=datetime.fromtimestamp(stat.st_mtime),
+                        last_accessed=mtime,
                         size_bytes=size,
                         managed_by="conda",
                     )

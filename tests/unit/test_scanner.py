@@ -6,7 +6,7 @@ filesystem access is required.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -26,7 +26,7 @@ def _make_env(path: Path, env_type: str = "venv", size: int = 1024) -> Environme
         path=path,
         name=path.name,
         type=env_type,
-        last_accessed=datetime(2024, 1, 1),
+        last_accessed=datetime(2024, 1, 1, tzinfo=timezone.utc),
         size_bytes=size,
     )
 

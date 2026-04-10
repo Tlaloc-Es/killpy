@@ -7,7 +7,7 @@ import logging
 import platform
 import shutil
 import subprocess
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from killpy.detectors.base import AbstractDetector
@@ -97,12 +97,15 @@ class PipxDetector(AbstractDetector):
             try:
                 stat = candidate.stat()
                 size = get_total_size(candidate)
+                mtime = datetime.fromtimestamp(
+                    stat.st_mtime, tz=timezone.utc,
+                )
                 envs.append(
                     Environment(
                         path=candidate,
                         name=package_name,
                         type="pipx",
-                        last_accessed=datetime.fromtimestamp(stat.st_mtime),
+                        last_accessed=mtime,
                         size_bytes=size,
                         managed_by="pipx",
                     )

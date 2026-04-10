@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import platform
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from killpy.detectors.base import AbstractDetector
@@ -49,12 +49,15 @@ class PyenvDetector(AbstractDetector):
                 try:
                     stat = version_dir.stat()
                     size = get_total_size(version_dir)
+                    mtime = datetime.fromtimestamp(
+                        stat.st_mtime, tz=timezone.utc,
+                    )
                     envs.append(
                         Environment(
                             path=version_dir,
                             name=version_dir.name,
                             type="pyenv",
-                            last_accessed=datetime.fromtimestamp(stat.st_mtime),
+                            last_accessed=mtime,
                             size_bytes=size,
                         )
                     )

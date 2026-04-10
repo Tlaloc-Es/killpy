@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import platform
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from killpy.detectors.base import AbstractDetector
@@ -55,12 +55,15 @@ class HatchDetector(AbstractDetector):
                     try:
                         stat = env_dir.stat()
                         size = get_total_size(env_dir)
+                        mtime = datetime.fromtimestamp(
+                            stat.st_mtime, tz=timezone.utc,
+                        )
                         envs.append(
                             Environment(
                                 path=env_dir,
                                 name=f"{project_dir.name}/{env_dir.name}",
                                 type="hatch",
-                                last_accessed=datetime.fromtimestamp(stat.st_mtime),
+                                last_accessed=mtime,
                                 size_bytes=size,
                             )
                         )
