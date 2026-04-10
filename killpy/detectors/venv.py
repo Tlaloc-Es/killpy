@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from killpy.detectors.base import AbstractDetector
@@ -101,10 +101,11 @@ class VenvDetector(AbstractDetector):
 def _make_env(dir_path: Path, tag: str) -> Environment:
     stat = dir_path.stat()
     size = get_total_size(dir_path)
+    mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
     return Environment(
         path=dir_path,
         name=str(dir_path),
         type=tag,
-        last_accessed=datetime.fromtimestamp(stat.st_mtime),
+        last_accessed=mtime,
         size_bytes=size,
     )

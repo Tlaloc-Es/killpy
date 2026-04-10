@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from killpy.detectors.base import AbstractDetector
@@ -37,12 +37,15 @@ class ToxDetector(AbstractDetector):
                     try:
                         stat = tox_path.stat()
                         size = get_total_size(tox_path)
+                        mtime = datetime.fromtimestamp(
+                            stat.st_mtime, tz=timezone.utc,
+                        )
                         envs.append(
                             Environment(
                                 path=tox_path,
                                 name=str(tox_path),
                                 type="tox",
-                                last_accessed=datetime.fromtimestamp(stat.st_mtime),
+                                last_accessed=mtime,
                                 size_bytes=size,
                             )
                         )

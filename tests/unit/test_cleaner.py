@@ -6,7 +6,7 @@ the tests never touch the real filesystem or spawn subprocesses.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch, call
 
@@ -31,7 +31,7 @@ def _env(
         path=path or Path("/fake/env"),
         name=name,
         type=env_type,
-        last_accessed=datetime(2024, 6, 1),
+        last_accessed=datetime(2024, 6, 1, tzinfo=timezone.utc),
         size_bytes=size,
         managed_by=managed_by,
     )

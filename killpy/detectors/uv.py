@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from killpy.detectors.base import AbstractDetector
@@ -43,12 +43,15 @@ class UvDetector(AbstractDetector):
                     try:
                         stat = uv_path.stat()
                         size = get_total_size(uv_path)
+                        mtime = datetime.fromtimestamp(
+                            stat.st_mtime, tz=timezone.utc,
+                        )
                         envs.append(
                             Environment(
                                 path=uv_path,
                                 name=str(uv_path),
                                 type="uv",
-                                last_accessed=datetime.fromtimestamp(stat.st_mtime),
+                                last_accessed=mtime,
                                 size_bytes=size,
                             )
                         )
