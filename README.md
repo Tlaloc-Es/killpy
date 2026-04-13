@@ -204,6 +204,24 @@ killpy list --json                        # output as a JSON array
 killpy list --json-stream                 # stream as NDJSON — one line per env
 ```
 
+`--json` example output:
+
+```json
+[
+  {
+    "path": "projects/my-app/.venv",
+    "absolute_path": "/home/user/projects/my-app/.venv",
+    "name": "my-app/.venv",
+    "type": "venv",
+    "last_accessed": "2025-11-02T14:23:01+00:00",
+    "size_bytes": 54393984,
+    "size_human": "51.88 MB",
+    "managed_by": null,
+    "is_system_critical": false
+  }
+]
+```
+
 `--json-stream` is ideal for piping into `jq` or processing in scripts before the full scan completes:
 
 ```bash

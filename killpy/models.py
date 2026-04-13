@@ -70,8 +70,14 @@ class Environment:
 
     def to_dict(self) -> dict:
         """Return a JSON-serialisable representation."""
+        abs_path = self.path.resolve()
+        try:
+            rel_path = abs_path.relative_to(Path.cwd())
+        except ValueError:
+            rel_path = abs_path
         return {
-            "path": str(self.path),
+            "path": str(rel_path),
+            "absolute_path": str(abs_path),
             "name": self.name,
             "type": self.type,
             "last_accessed": self.last_accessed.isoformat(),
