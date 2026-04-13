@@ -408,7 +408,7 @@ Keep your repo free of `__pycache__` on every commit:
 
 ```yaml
 - repo: https://github.com/Tlaloc-Es/KillPy
-  rev: 0.16.0
+  rev: 0.20.0
   hooks:
     - id: killpy
       pass_filenames: false

@@ -63,8 +63,8 @@ exclude_lines = [
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.20.0"
-version_files = ["pyproject.toml:version", "README.md:rev:"]
+version_provider = "uv"
+version_files = ["README.md:rev:"]
 
 [project.scripts]
 killpy = "killpy.__main__:cli"
