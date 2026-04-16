@@ -435,6 +435,7 @@ ______________________________________________________________________
 - [ ] Windows support improvements (pyenv-win, conda on Windows PATH)
 - [ ] TUI: filter panel, live progress bar, confirmation dialog with total bytes before delete
 - [ ] Detect unused dependencies inside `pyproject.toml` / `requirements.txt`
+- [ ] Add environment reporting (Python version, installed packages, and versions) to better differentiate between virtual environments with different dependencies
 
 ______________________________________________________________________
 
