@@ -8,17 +8,17 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from killpy.cleaner import Cleaner, CleanerError
 from killpy.models import Environment
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _env(
     path: Path | None = None,
@@ -41,6 +41,7 @@ def _env(
 # Dry-run mode
 # ---------------------------------------------------------------------------
 
+
 class TestCleanerDryRun:
     def test_dry_run_returns_size_without_deleting(self, tmp_path: Path) -> None:
         env = _env(path=tmp_path / "env", size=5000)
@@ -61,6 +62,7 @@ class TestCleanerDryRun:
 # ---------------------------------------------------------------------------
 # Filesystem deletion
 # ---------------------------------------------------------------------------
+
 
 class TestCleanerFilesystem:
     def test_deletes_via_rmtree(self, tmp_path: Path) -> None:
@@ -107,6 +109,7 @@ class TestCleanerFilesystem:
 # Conda environments
 # ---------------------------------------------------------------------------
 
+
 class TestCleanerConda:
     def test_calls_conda_env_remove(self) -> None:
         env = _env(name="myenv", managed_by="conda")
@@ -146,6 +149,7 @@ class TestCleanerConda:
 # pipx packages
 # ---------------------------------------------------------------------------
 
+
 class TestCleanerPipx:
     def test_calls_pipx_uninstall(self) -> None:
         env = _env(name="black", managed_by="pipx")
@@ -184,6 +188,7 @@ class TestCleanerPipx:
 # delete_many error handling
 # ---------------------------------------------------------------------------
 
+
 class TestCleanerDeleteManyErrors:
     def test_continues_after_individual_error(self, tmp_path: Path) -> None:
         """A failed deletion for one env should not abort the rest."""
@@ -192,9 +197,12 @@ class TestCleanerDeleteManyErrors:
         bad = tmp_path / "bad"
         bad.mkdir()
 
-        envs = [_env(path=bad, name="bad", managed_by="conda"), _env(path=good, size=200)]
+        envs = [
+            _env(path=bad, name="bad", managed_by="conda"),
+            _env(path=good, size=200),
+        ]
         with (
-            patch("shutil.which", return_value=None),  # conda not found → error on first
+            patch("shutil.which", return_value=None),  # conda not found
         ):
             cleaner = Cleaner()
             total = cleaner.delete_many(envs)

@@ -1,29 +1,26 @@
-"""Extended detector tests covering conda, poetry, pipx, hatch, pipenv, tox, uv, artifacts."""
+"""Extended detector tests: conda, poetry, pipx, hatch, pipenv, tox, uv, artifacts."""
 
 from __future__ import annotations
 
 import json
 import subprocess
-from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 from killpy.detectors.artifacts import ArtifactsDetector, _is_artifact_dir
 from killpy.detectors.cache import CacheDetector, _make_cache_env
 from killpy.detectors.conda import CondaDetector
-from killpy.detectors.hatch import HatchDetector, _hatch_envs_root
-from killpy.detectors.pipenv import PipenvDetector, _pipenv_venvs_root
-from killpy.detectors.pipx import PipxDetector, _pipx_venvs_root
-from killpy.detectors.poetry import PoetryDetector, _poetry_venvs_dir
+from killpy.detectors.hatch import HatchDetector
+from killpy.detectors.pipenv import PipenvDetector
+from killpy.detectors.pipx import PipxDetector
+from killpy.detectors.poetry import PoetryDetector
 from killpy.detectors.tox import ToxDetector
 from killpy.detectors.uv import UvDetector
-
 
 # ---------------------------------------------------------------------------
 # CondaDetector
 # ---------------------------------------------------------------------------
+
 
 class TestCondaDetector:
     def _conda_output(self, lines: list[str]) -> str:
@@ -40,19 +37,19 @@ class TestCondaDetector:
     def test_detects_environments(self, tmp_path: Path) -> None:
         env_path = tmp_path / "myenv"
         env_path.mkdir()
-        output = self._conda_output([
-            "# conda environments:",
-            "#",
-            f"base                     /some/base",
-            f"myenv                    {env_path}",
-        ])
+        output = self._conda_output(
+            [
+                "# conda environments:",
+                "#",
+                "base                     /some/base",
+                f"myenv                    {env_path}",
+            ]
+        )
         with (
             patch("shutil.which", return_value="/usr/bin/conda"),
             patch("subprocess.run") as mock_run,
         ):
-            mock_run.return_value = MagicMock(
-                returncode=0, stdout=output, stderr=""
-            )
+            mock_run.return_value = MagicMock(returncode=0, stdout=output, stderr="")
             envs = CondaDetector().detect(tmp_path)
 
         found = {e.name for e in envs}
@@ -61,9 +58,11 @@ class TestCondaDetector:
     def test_skips_active_env_marked_with_star(self, tmp_path: Path) -> None:
         env_path = tmp_path / "active"
         env_path.mkdir()
-        output = self._conda_output([
-            f"active                *  {env_path}",
-        ])
+        output = self._conda_output(
+            [
+                f"active                *  {env_path}",
+            ]
+        )
         with (
             patch("shutil.which", return_value="/usr/bin/conda"),
             patch("subprocess.run") as mock_run,
@@ -98,7 +97,9 @@ class TestCondaDetector:
         assert envs == []
 
     def test_returns_empty_on_called_process_error(self, tmp_path: Path) -> None:
-        with patch("subprocess.run", side_effect=subprocess.CalledProcessError(1, "conda")):
+        with patch(
+            "subprocess.run", side_effect=subprocess.CalledProcessError(1, "conda")
+        ):
             envs = CondaDetector().detect(tmp_path)
         assert envs == []
 
@@ -123,6 +124,7 @@ class TestCondaDetector:
 # ---------------------------------------------------------------------------
 # PoetryDetector
 # ---------------------------------------------------------------------------
+
 
 class TestPoetryDetector:
     def test_can_handle_true_when_dir_exists(self, tmp_path: Path) -> None:
@@ -172,6 +174,7 @@ class TestPoetryDetector:
 # PipxDetector
 # ---------------------------------------------------------------------------
 
+
 class TestPipxDetector:
     def _pipx_json(self, packages: dict) -> str:
         return json.dumps({"venvs": packages})
@@ -205,7 +208,9 @@ class TestPipxDetector:
         assert envs == []
 
     def test_returns_empty_on_called_process_error(self, tmp_path: Path) -> None:
-        with patch("subprocess.run", side_effect=subprocess.CalledProcessError(1, "pipx")):
+        with patch(
+            "subprocess.run", side_effect=subprocess.CalledProcessError(1, "pipx")
+        ):
             envs = PipxDetector().detect(tmp_path)
         assert envs == []
 
@@ -219,7 +224,9 @@ class TestPipxDetector:
             patch("shutil.which", return_value="/usr/bin/pipx"),
             patch("subprocess.run") as mock_run,
         ):
-            mock_run.return_value = MagicMock(returncode=0, stdout="not-json", stderr="")
+            mock_run.return_value = MagicMock(
+                returncode=0, stdout="not-json", stderr=""
+            )
             envs = PipxDetector().detect(tmp_path)
         assert envs == []
 
@@ -238,6 +245,7 @@ class TestPipxDetector:
 # ---------------------------------------------------------------------------
 # HatchDetector
 # ---------------------------------------------------------------------------
+
 
 class TestHatchDetector:
     def _make_hatch_tree(self, root: Path) -> None:
@@ -295,6 +303,7 @@ class TestHatchDetector:
 # PipenvDetector
 # ---------------------------------------------------------------------------
 
+
 class TestPipenvDetector:
     def test_can_handle_true_with_pipenv_on_path(self) -> None:
         with patch("shutil.which", return_value="/usr/bin/pipenv"):
@@ -340,6 +349,7 @@ class TestPipenvDetector:
 # ToxDetector
 # ---------------------------------------------------------------------------
 
+
 class TestToxDetector:
     def test_can_handle_always_true(self) -> None:
         assert ToxDetector().can_handle() is True
@@ -377,6 +387,7 @@ class TestToxDetector:
 # ---------------------------------------------------------------------------
 # UvDetector
 # ---------------------------------------------------------------------------
+
 
 class TestUvDetector:
     def test_can_handle_true(self) -> None:
@@ -417,6 +428,7 @@ class TestUvDetector:
 # ---------------------------------------------------------------------------
 # ArtifactsDetector
 # ---------------------------------------------------------------------------
+
 
 class TestArtifactsDetector:
     def test_can_handle_always_true(self) -> None:
@@ -475,6 +487,7 @@ class TestArtifactsDetector:
 # CacheDetector – extended
 # ---------------------------------------------------------------------------
 
+
 class TestCacheDetectorExtended:
     def test_finds_mypy_cache(self, tmp_path: Path) -> None:
         (tmp_path / ".mypy_cache").mkdir()
@@ -494,10 +507,7 @@ class TestCacheDetectorExtended:
     def test_scan_global_returns_existing_paths(self, tmp_path: Path) -> None:
         fake_pip = tmp_path / "pip"
         fake_pip.mkdir()
-        candidates = [(fake_pip, "pip-cache"), (tmp_path / "nope", "uv-cache")]
         with patch("killpy.detectors.cache.Path.home", return_value=tmp_path):
-            # Build a minimal detector and override candidates
-            detector = CacheDetector()
             # Directly test _make_cache_env with our dir
             env = _make_cache_env(fake_pip, "pip-cache")
         assert env.type == "pip-cache"
@@ -506,7 +516,9 @@ class TestCacheDetectorExtended:
     def test_detect_method_combines_local_and_global(self, tmp_path: Path) -> None:
         """detect() must call _scan_local and _scan_global (covers detect() body)."""
         (tmp_path / ".mypy_cache").mkdir()
-        with patch.object(CacheDetector, "_scan_global", return_value=[]) as mock_global:
+        with patch.object(
+            CacheDetector, "_scan_global", return_value=[]
+        ) as mock_global:
             envs = CacheDetector().detect(tmp_path)
         mock_global.assert_called_once()
         assert any(e.path.name == ".mypy_cache" for e in envs)
@@ -519,15 +531,19 @@ class TestCacheDetectorExtended:
         envs = CacheDetector()._scan_local(tmp_path)
         assert envs == []
 
-    def test_scan_local_handles_os_error_from_make_cache_env(self, tmp_path: Path) -> None:
+    def test_scan_local_handles_os_error_from_make_cache_env(
+        self, tmp_path: Path
+    ) -> None:
         """_scan_local must continue on OSError from _make_cache_env."""
         (tmp_path / ".mypy_cache").mkdir()
-        with patch("killpy.detectors.cache._make_cache_env", side_effect=OSError("fail")):
+        with patch(
+            "killpy.detectors.cache._make_cache_env", side_effect=OSError("fail")
+        ):
             envs = CacheDetector()._scan_local(tmp_path)
         assert envs == []
 
     def test_scan_global_finds_pip_cache(self, tmp_path: Path) -> None:
-        """_scan_global returns pip-cache env when the dir exists (covers full method)."""
+        """_scan_global returns pip-cache env when the dir exists."""
         pip_dir = tmp_path / ".cache" / "pip"
         pip_dir.mkdir(parents=True)
         with patch.object(Path, "home", return_value=tmp_path):
@@ -576,6 +592,7 @@ class TestPyenvDetectorExtended:
 # PoetryDetector – error-path coverage
 # ---------------------------------------------------------------------------
 
+
 class TestPoetryDetectorErrors:
     def test_inner_os_error_skips_venv(self, tmp_path: Path) -> None:
         (tmp_path / "project-abc").mkdir()
@@ -598,6 +615,7 @@ class TestPoetryDetectorErrors:
 # ---------------------------------------------------------------------------
 # HatchDetector – error-path coverage
 # ---------------------------------------------------------------------------
+
 
 class TestHatchDetectorErrors:
     def test_inner_os_error_skips_env(self, tmp_path: Path) -> None:
@@ -622,6 +640,7 @@ class TestHatchDetectorErrors:
 # PipenvDetector – error-path coverage
 # ---------------------------------------------------------------------------
 
+
 class TestPipenvDetectorErrors:
     def test_inner_os_error_skips_venv(self, tmp_path: Path) -> None:
         (tmp_path / "project-abc").mkdir()
@@ -645,19 +664,20 @@ class TestPipenvDetectorErrors:
 # PipxDetector – fallback venv path coverage (lines 81-91)
 # ---------------------------------------------------------------------------
 
+
 class TestPipxDetectorFallback:
     def _pipx_json_with_app_paths(self, pkg: str, bin_path: str) -> str:
-        return json.dumps({
-            "venvs": {
-                pkg: {
-                    "metadata": {
-                        "main_package": {
-                            "app_paths": [{"__Path__": bin_path}]
+        return json.dumps(
+            {
+                "venvs": {
+                    pkg: {
+                        "metadata": {
+                            "main_package": {"app_paths": [{"__Path__": bin_path}]}
                         }
                     }
                 }
             }
-        })
+        )
 
     def test_fallback_finds_venv_via_app_paths(self, tmp_path: Path) -> None:
         """When primary venv path doesn't exist, fall back to app_paths heuristic."""
@@ -683,7 +703,9 @@ class TestPipxDetectorFallback:
 
     def test_fallback_skips_when_no_app_paths(self, tmp_path: Path) -> None:
         """Package with empty app_paths list should be skipped."""
-        payload = json.dumps({"venvs": {"ghost": {"metadata": {"main_package": {"app_paths": []}}}}})
+        payload = json.dumps(
+            {"venvs": {"ghost": {"metadata": {"main_package": {"app_paths": []}}}}}
+        )
         missing_root = tmp_path / "nope"
         with (
             patch("shutil.which", return_value="/usr/bin/pipx"),
@@ -696,7 +718,15 @@ class TestPipxDetectorFallback:
 
     def test_fallback_skips_when_raw_path_empty(self, tmp_path: Path) -> None:
         """Package with app_paths entry missing __Path__ should be skipped."""
-        payload = json.dumps({"venvs": {"ghost": {"metadata": {"main_package": {"app_paths": [{"__Path__": ""}]}}}}})
+        payload = json.dumps(
+            {
+                "venvs": {
+                    "ghost": {
+                        "metadata": {"main_package": {"app_paths": [{"__Path__": ""}]}}
+                    }
+                }
+            }
+        )
         missing_root = tmp_path / "nope"
         with (
             patch("shutil.which", return_value="/usr/bin/pipx"),

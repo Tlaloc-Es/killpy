@@ -250,6 +250,7 @@ ______________________________________________________________________
 killpy stats
 killpy stats --path ~/projects
 killpy stats --json
+killpy stats --history           # cumulative scan history
 ```
 
 Example output:
@@ -278,6 +279,98 @@ killpy clean --path ~/projects
 ```
 
 Removes `__pycache__` directories recursively under the target path.
+
+______________________________________________________________________
+
+### `killpy doctor` — smart health report
+
+```
+Usage: killpy doctor [OPTIONS]
+
+Options:
+  --path DIRECTORY  Root directory to scan  [default: cwd]
+  --all             Show all environments grouped by category
+                    (HIGH / MEDIUM / LOW). Default shows only the top 5.
+  --json            Output as JSON.
+  --help            Show this message and exit.
+```
+
+`doctor` analyses every detected virtual environment in two phases:
+
+**Phase 1 — Scoring (for sorting only)**
+
+A numeric score between 0 and 1 is computed from four weighted signals:
+
+| Signal | Description |
+|--------|-------------|
+| **Size** | Larger environments score higher (sigmoid-normalised around 500 MB). |
+| **Age** | Days since last access, linear up to 365 days. |
+| **Orphan status** | No `pyproject.toml`, `requirements.txt`, or other project marker found nearby. |
+| **Git inactivity** | The associated git repository has no recent commits. |
+
+The score determines *ordering* within each category (highest score listed first). It does **not** determine the category itself.
+
+**Phase 2 — Rule-based classification**
+
+Category is assigned deterministically by applying the following rules in order:
+
+| Priority | Rule | Category |
+|----------|------|----------|
+| 1 | Orphan (`is_orphan=True`) **and** `age ≥ 180 days` | `HIGH` |
+| 2 | No project files **and** `age ≥ 365 days` | `HIGH` |
+| 3 | Active git repository **or** `age < 120 days` | `LOW` |
+| 4 | `age ≥ 120 days` | `MEDIUM` |
+| 5 | Fallback | `LOW` |
+
+Age and orphan status are the dominant signals. Size does not affect the category.
+
+| Category | Recommended action |
+|----------|--------------------|
+| `HIGH` | Delete — unused and orphaned |
+| `MEDIUM` | Review — possibly unused |
+| `LOW` | Keep — actively used / Keep |
+
+Examples:
+
+```bash
+killpy doctor                           # top 5 offenders in current directory
+killpy doctor --path ~                  # scan home folder
+killpy doctor --all                     # show all environments by category
+killpy doctor --json                    # machine-readable output
+killpy doctor --path ~/projects --all   # full report for a specific tree
+```
+
+Example output (default):
+
+```
+──────────── Environment Health Report ────────────
+Scanned: /home/user/projects
+Environments found: 18  |  Total size: 6.2 GB  |  Estimated wasted: 3.8 GB
+  HIGH (safe to delete): 5  MEDIUM (review): 7  LOW (keep): 6
+
+               Top 5 Offenders
+┌──────────────────────────┬────────┬───────────┬───────┬──────────┐
+│ Path                     │   Size │ Age (days)│ Score │ Category │
+├──────────────────────────┼────────┼───────────┼───────┼──────────┤
+│ ~/old-project/.venv      │ 850 MB │       312 │  0.94 │ HIGH     │
+│ ~/tutorial2023/.venv     │ 420 MB │       198 │  0.87 │ HIGH     │
+└──────────────────────────┴────────┴───────────┴───────┴──────────┘
+
+Recommendation: Run `killpy delete --older-than 180` to free up to 3.8 GB.
+(12 MEDIUM/LOW environment(s) hidden — run with --all to see them)
+```
+
+Use `--all` to see all three category tables at once:
+
+```bash
+killpy doctor --all
+```
+
+The JSON output is useful for scripting or auditing:
+
+```bash
+killpy doctor --json | jq '.suggestions[] | select(.category=="HIGH") | .env_path'
+```
 
 ______________________________________________________________________
 

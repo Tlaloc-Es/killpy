@@ -11,6 +11,7 @@ from rich.console import Console
 from rich.table import Table
 
 from killpy.files import format_size
+from killpy.intelligence.tracker import UsageTracker
 from killpy.scanner import Scanner
 
 
@@ -28,8 +29,18 @@ from killpy.scanner import Scanner
     default=False,
     help="Output as JSON.",
 )
-def stats_cmd(path: Path, as_json: bool) -> None:
+@click.option(
+    "--history",
+    is_flag=True,
+    default=False,
+    help="Show cumulative scan history from ~/.killpy/history.json.",
+)
+def stats_cmd(path: Path, as_json: bool, history: bool) -> None:
     """Show disk-usage statistics grouped by environment type."""
+    if history:
+        _show_history(as_json)
+        return
+
     scanner = Scanner()
     envs = scanner.scan(path)
 
@@ -83,4 +94,30 @@ def stats_cmd(path: Path, as_json: bool) -> None:
     console.print(
         f"\nTotal: [bold]{total_count}[/bold] environment(s) — "
         f"[bold]{format_size(total_bytes)}[/bold]"
+    )
+
+
+def _show_history(as_json: bool) -> None:
+    """Print cumulative scan history."""
+    tracker = UsageTracker()
+    summary = tracker.get_summary()
+
+    if as_json:
+        click.echo(json.dumps(summary, indent=2))
+        return
+
+    console = Console()
+    if summary["total_scans"] == 0:
+        console.print("[yellow]No scan history found.[/yellow]")
+        return
+
+    found_str = format_size(summary["total_space_found"])
+    deleted_str = format_size(summary["total_space_deleted"])
+    console.print()
+    console.rule("[bold cyan]Scan History Summary[/bold cyan]")
+    console.print(
+        f"\n  Total scans:       [bold]{summary['total_scans']}[/bold]\n"
+        f"  Space found:       [bold]{found_str}[/bold]\n"
+        f"  Space deleted:     [bold red]{deleted_str}[/bold red]\n"
+        f"  Last scan:         {summary['last_scan_time']}\n"
     )

@@ -30,6 +30,32 @@ def _pipx_venvs_root() -> Path:
     return xdg
 
 
+def _resolve_pipx_candidate(
+    package_name: str, pkg_data: dict, venvs_root: Path
+) -> Path | None:
+    """Return the venv directory for a pipx package, or ``None`` if not found."""
+    candidate = venvs_root / package_name
+    if candidate.exists():
+        return candidate
+
+    app_paths = (
+        pkg_data.get("metadata", {}).get("main_package", {}).get("app_paths", [])
+    )
+    if not app_paths:
+        return None
+    raw = app_paths[0].get("__Path__", "")
+    if not raw:
+        return None
+    # bin/<exe>  →  venvs/<pkg>
+    candidate = Path(raw).parent.parent / package_name
+    if not candidate.exists():
+        candidate = Path(raw).parent
+    if not candidate.exists():
+        logger.debug("Cannot locate venv dir for pipx package %s", package_name)
+        return None
+    return candidate
+
+
 class PipxDetector(AbstractDetector):
     """Detects pipx packages via ``pipx list --json``.
 
@@ -68,37 +94,17 @@ class PipxDetector(AbstractDetector):
         venvs_root = _pipx_venvs_root()
         envs: list[Environment] = []
 
-        for package_name, _pkg_data in data.get("venvs", {}).items():
-            # Prefer the known venvs-root path; fall back to the app_paths heuristic.
-            candidate = venvs_root / package_name
-            if not candidate.exists():
-                # Try to resolve from app_paths as a fallback
-                app_paths = (
-                    _pkg_data.get("metadata", {})
-                    .get("main_package", {})
-                    .get("app_paths", [])
-                )
-                if not app_paths:
-                    continue
-                raw = app_paths[0].get("__Path__", "")
-                if not raw:
-                    continue
-                # bin/<exe>  →  venvs/<pkg>
-                candidate = Path(raw).parent.parent / package_name
-                if not candidate.exists():
-                    # Last resort: just use the bin dir's parent
-                    candidate = Path(raw).parent
-                if not candidate.exists():
-                    logger.debug(
-                        "Cannot locate venv dir for pipx package %s", package_name
-                    )
-                    continue
+        for package_name, pkg_data in data.get("venvs", {}).items():
+            candidate = _resolve_pipx_candidate(package_name, pkg_data, venvs_root)
+            if candidate is None:
+                continue
 
             try:
                 stat = candidate.stat()
                 size = get_total_size(candidate)
                 mtime = datetime.fromtimestamp(
-                    stat.st_mtime, tz=timezone.utc,
+                    stat.st_mtime,
+                    tz=timezone.utc,
                 )
                 envs.append(
                     Environment(

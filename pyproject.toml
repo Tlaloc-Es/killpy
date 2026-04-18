@@ -32,6 +32,7 @@ dev = [
     "coverage>=7.6.10",
     "mkdocs-material>=9.6.0",
     "mypy>=1.14.0",
+    "poethepoet>=0.33.0",
     "pre-commit>=4.0.1",
     "pytest>=8.3.4",
     "pytest-cov>=6.0.0",
@@ -65,6 +66,13 @@ exclude_lines = [
 name = "cz_conventional_commits"
 version_provider = "uv"
 version_files = ["README.md:rev:"]
+
+[tool.poe.tasks]
+test = "pytest"
+cov = "coverage html"
+lint = "ruff check killpy tests"
+format = "ruff format killpy tests"
+type = "mypy killpy"
 
 [project.scripts]
 killpy = "killpy.__main__:cli"

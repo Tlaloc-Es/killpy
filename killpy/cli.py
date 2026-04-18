@@ -8,6 +8,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any, TypedDict
 
+from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.widgets import (
@@ -24,8 +25,22 @@ from textual.widgets import (
 from killpy.cleaner import Cleaner, CleanerError
 from killpy.cleaners import remove_pycache
 from killpy.files import format_size
+from killpy.intelligence import SuggestionEngine, score_all
 from killpy.models import Environment
 from killpy.scanner import Scanner
+
+_HEALTH_STYLES: dict[str, tuple[str, str]] = {
+    "HIGH": ("HIGH", "bold red"),
+    "MEDIUM": ("MED", "bold yellow"),
+    "LOW": ("LOW", "bold green"),
+}
+
+
+def _health_text(category: str) -> Text | str:
+    if category in _HEALTH_STYLES:
+        label, style = _HEALTH_STYLES[category]
+        return Text(label, style=style)
+    return ""
 
 
 def is_venv_tab(func):
@@ -68,6 +83,7 @@ class VenvRow(TypedDict):
     last_modified: str
     size: int
     size_human: str
+    health: str
     status: str
     environment: Environment
 
@@ -87,6 +103,7 @@ class TableApp(App):
         "Last Modified",
         "Size",
         "Size (Human Readable)",
+        "Health",
         "Status",
     ]
     PIPX_HEADERS = ["Package", "Size", "Size (Human Readable)", "Status"]
@@ -95,7 +112,8 @@ class TableApp(App):
     VENV_COL_LAST_MODIFIED = 2
     VENV_COL_SIZE = 3
     VENV_COL_SIZE_HUMAN = 4
-    VENV_COL_STATUS = 5
+    VENV_COL_HEALTH = 5
+    VENV_COL_STATUS = 6
 
     PIPX_COL_PACKAGE = 0
     PIPX_COL_SIZE = 1
@@ -125,6 +143,7 @@ class TableApp(App):
         self._venv_display_indices: list[int] = []
         self._multi_select_mode: bool = False
         self._selected_venv_indices: set[int] = set()
+        self._health_by_path: dict[str, str] = {}
         self.cleaner = Cleaner()
         self.scanner = Scanner(
             types={
@@ -315,6 +334,7 @@ class TableApp(App):
                 "last_modified": environment.last_accessed_str,
                 "size": environment.size_bytes,
                 "size_human": environment.size_human,
+                "health": self._health_by_path.get(str(environment.path), ""),
                 "status": "",
                 "environment": environment,
             }
@@ -332,6 +352,7 @@ class TableApp(App):
             row["last_modified"],
             row["size"],
             row["size_human"],
+            _health_text(row["health"]),
             row["status"],
         )
 
@@ -373,6 +394,7 @@ class TableApp(App):
                 row["last_modified"],
                 row["size"],
                 row["size_human"],
+                _health_text(row["health"]),
                 self._compute_row_status(i, row),
             )
 
@@ -452,6 +474,11 @@ class TableApp(App):
         elif column_index == self.VENV_COL_SIZE_HUMAN:
             self.venv_rows.sort(
                 key=lambda row: row["size_human"].lower(), reverse=reverse
+            )
+        elif column_index == self.VENV_COL_HEALTH:
+            _order = {"HIGH": 0, "MEDIUM": 1, "LOW": 2, "": 3}
+            self.venv_rows.sort(
+                key=lambda row: _order.get(row["health"], 3), reverse=reverse
             )
         elif column_index == self.VENV_COL_STATUS:
             self.venv_rows.sort(key=lambda row: row["status"].lower(), reverse=reverse)
@@ -545,6 +572,21 @@ class TableApp(App):
         status_label.update(
             f"Found {venv_count} virtual environments and {pipx_count} pipx packages"
         )
+        await self._compute_health_scores()
+
+    async def _compute_health_scores(self) -> None:
+        """Score venv environments and populate the Health column."""
+        if not self.venv_rows:
+            return
+        envs = [row["environment"] for row in self.venv_rows]
+        scored = await asyncio.to_thread(lambda: score_all(envs, run_git=False))
+        engine = SuggestionEngine()
+        suggestions = engine.classify_all(scored)
+        for suggestion in suggestions:
+            self._health_by_path[str(suggestion.env_path)] = suggestion.category
+        for row in self.venv_rows:
+            row["health"] = self._health_by_path.get(row["path"], "")
+        self.render_venv_table()
 
     async def action_clean_pycache(self):
         total_freed_space = await asyncio.to_thread(remove_pycache, self.root_dir)
@@ -612,11 +654,12 @@ class TableApp(App):
                 return
             elif current_status == EnvStatus.MARKED_TO_DELETE.value:
                 row["status"] = ""
-                table.update_cell_at((cursor_cell.row, 5), "")
+                table.update_cell_at((cursor_cell.row, self.VENV_COL_STATUS), "")
             else:
                 row["status"] = EnvStatus.MARKED_TO_DELETE.value
                 table.update_cell_at(
-                    (cursor_cell.row, 5), EnvStatus.MARKED_TO_DELETE.value
+                    (cursor_cell.row, self.VENV_COL_STATUS),
+                    EnvStatus.MARKED_TO_DELETE.value,
                 )
 
     @is_venv_tab
@@ -633,7 +676,10 @@ class TableApp(App):
             if self.delete_environment(row["environment"]):
                 self.bytes_release += int(row["size"])
                 row["status"] = EnvStatus.DELETED.value
-                table.update_cell_at((cursor_cell.row, 5), EnvStatus.DELETED.value)
+                table.update_cell_at(
+                    (cursor_cell.row, self.VENV_COL_STATUS),
+                    EnvStatus.DELETED.value,
+                )
                 self.query_one("#status-label", Label).update(
                     f"{format_size(self.bytes_release)} deleted"
                 )
@@ -773,7 +819,8 @@ class TableApp(App):
             self._selected_venv_indices.add(data_index)
         self._update_multi_select_label()
         table.update_cell_at(
-            (cursor_cell.row, 5), self._compute_row_status(data_index, row)
+            (cursor_cell.row, self.VENV_COL_STATUS),
+            self._compute_row_status(data_index, row),
         )
 
     @is_venv_tab

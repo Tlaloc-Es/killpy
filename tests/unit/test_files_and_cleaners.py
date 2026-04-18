@@ -1,21 +1,20 @@
-"""Tests for killpy/files/__init__.py, killpy/cleaners/__init__.py, and killpy/commands/clean.py."""
+"""Tests for killpy/files/__init__.py, killpy/cleaners/__init__.py, and clean.py."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
 from click.testing import CliRunner
 
 from killpy.__main__ import cli
 from killpy.cleaners import remove_pycache
 from killpy.files import format_size, get_total_size
 
-
 # ---------------------------------------------------------------------------
 # files/__init__.py
 # ---------------------------------------------------------------------------
+
 
 class TestGetTotalSize:
     def test_empty_directory_returns_zero(self, tmp_path: Path) -> None:
@@ -46,8 +45,7 @@ class TestGetTotalSize:
         original_rglob = tmp_path.rglob
 
         def _rglob(pattern):
-            for p in original_rglob(pattern):
-                yield p
+            yield from original_rglob(pattern)
 
         # Even if a file disappears, get_total_size should not raise
         result = get_total_size(tmp_path)
@@ -76,6 +74,7 @@ class TestFormatSize:
 # ---------------------------------------------------------------------------
 # cleaners/__init__.py
 # ---------------------------------------------------------------------------
+
 
 class TestRemovePycache:
     def test_removes_pycache_and_returns_freed_size(self, tmp_path: Path) -> None:
@@ -112,6 +111,7 @@ class TestRemovePycache:
 # ---------------------------------------------------------------------------
 # commands/clean.py
 # ---------------------------------------------------------------------------
+
 
 class TestCleanCommand:
     def test_clean_runs_without_error(self, tmp_path: Path) -> None:

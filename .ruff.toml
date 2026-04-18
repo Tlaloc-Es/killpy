@@ -22,7 +22,6 @@ exclude = [
     "node_modules",
     "venv",
     "src/interface",
-    "tests"
 ]
 
 # Same as Black.
@@ -38,7 +37,21 @@ max-complexity = 10
 
 [lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
-select = ["E", "F", "I", "N", "C", "W", "C90", "UP", "N", "PLC", "PLE", "PLR", "PLW"]
+select = [
+    "E",
+    "F",
+    "I",
+    "N",
+    "C",
+    "W",
+    "C90",
+    "UP",
+    "N",
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+]
 ignore = []
 
 # Allow fix for all enabled rules (when `--fix`) is provided.
@@ -47,6 +60,9 @@ unfixable = []
 
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[lint.per-file-ignores]
+"tests/**" = ["PLR2004"]
 
 [lint.pylint]
 max-args = 6

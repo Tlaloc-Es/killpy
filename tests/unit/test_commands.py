@@ -11,16 +11,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
-from click.testing import CliRunner
+from click.testing import CliRunner, Result
 
 from killpy.__main__ import cli
-from killpy.models import Environment
-
+from killpy.cleaner import CleanerError
+from killpy.models import Environment, ScoredEnvironment
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _env(
     path: Path | None = None,
@@ -43,12 +43,16 @@ def _mock_scanner(envs: list[Environment]):
     """Return a patch context that replaces Scanner.scan with a stub."""
     mock = MagicMock()
     mock.return_value.scan.return_value = envs
-    return patch("killpy.commands.list.Scanner", mock), patch("killpy.commands.stats.Scanner", mock)
+    return (
+        patch("killpy.commands.list.Scanner", mock),
+        patch("killpy.commands.stats.Scanner", mock),
+    )
 
 
 # ---------------------------------------------------------------------------
 # killpy list
 # ---------------------------------------------------------------------------
+
 
 class TestListCommand:
     def _run(self, args: list[str], envs: list[Environment] | None = None):
@@ -102,6 +106,7 @@ class TestListCommand:
 # killpy stats
 # ---------------------------------------------------------------------------
 
+
 class TestStatsCommand:
     def _run(self, args: list[str], envs: list[Environment] | None = None):
         runner = CliRunner()
@@ -150,8 +155,11 @@ class TestStatsCommand:
 # killpy delete
 # ---------------------------------------------------------------------------
 
+
 class TestDeleteCommand:
-    def _run(self, args: list[str], envs: list[Environment] | None = None, input: str = "y\n"):
+    def _run(
+        self, args: list[str], envs: list[Environment] | None = None, input: str = "y\n"
+    ):
         runner = CliRunner()
         envs = envs or []
         with (
@@ -160,7 +168,9 @@ class TestDeleteCommand:
         ):
             mock_scanner.return_value.scan.return_value = envs
             mock_cleaner.return_value.delete.side_effect = lambda e: e.size_bytes
-            result = runner.invoke(cli, ["delete", "--path", "/tmp"] + args, input=input)
+            result = runner.invoke(
+                cli, ["delete", "--path", "/tmp"] + args, input=input
+            )
         return result
 
     def test_exits_zero_on_empty(self) -> None:
@@ -176,7 +186,9 @@ class TestDeleteCommand:
         ):
             mock_scanner.return_value.scan.return_value = envs
             runner = CliRunner()
-            result = runner.invoke(cli, ["delete", "--path", "/tmp", "--dry-run", "--yes"])
+            result = runner.invoke(
+                cli, ["delete", "--path", "/tmp", "--dry-run", "--yes"]
+            )
         mock_cleaner.return_value.delete.assert_not_called()
         assert "Dry run" in result.output
 
@@ -201,7 +213,7 @@ class TestDeleteCommand:
         ):
             mock_scanner.return_value.scan.return_value = envs
             runner = CliRunner()
-            result = runner.invoke(cli, ["delete", "--path", "/tmp"], input="n\n")
+            runner.invoke(cli, ["delete", "--path", "/tmp"], input="n\n")
         mock_cleaner.return_value.delete.assert_not_called()
 
 
@@ -209,11 +221,11 @@ class TestDeleteCommand:
 # killpy --help
 # ---------------------------------------------------------------------------
 
+
 class TestDeleteFilters:
     """Cover the _filter_envs branches (older_than, type) inside delete_cmd."""
 
     def _run_delete(self, extra_args: list[str], envs, input: str = "y\n"):
-        from killpy.cleaner import CleanerError
         runner = CliRunner()
         with (
             patch("killpy.commands.delete.Scanner") as mock_scanner,
@@ -242,7 +254,6 @@ class TestDeleteFilters:
         assert result.exit_code == 0
 
     def test_cleaner_error_shows_message_and_exits_nonzero(self) -> None:
-        from killpy.cleaner import CleanerError
         runner = CliRunner()
         env = _env(name="broken")
         with (
@@ -285,5 +296,75 @@ class TestHelpOutput:
     def test_stats_help(self) -> None:
         runner = CliRunner()
         result = runner.invoke(cli, ["stats", "--help"])
+        assert result.exit_code == 0
+        assert "--json" in result.output
+
+    def test_doctor_in_help(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["--help"])
+        assert result.exit_code == 0
+        assert "doctor" in result.output
+
+
+# ---------------------------------------------------------------------------
+# killpy doctor
+# ---------------------------------------------------------------------------
+
+
+class TestDoctorCommand:
+    def _run(self, args: list[str], envs: list[Environment] | None = None) -> Result:
+        runner = CliRunner()
+        envs = envs or []
+        with (
+            patch("killpy.commands.doctor.Scanner") as mock_scanner,
+            patch("killpy.commands.doctor.score_all") as mock_score,
+        ):
+            mock_scanner.return_value.scan.return_value = envs
+            # score_all returns ScoredEnvironment stubs; keep it simple
+            scored = [
+                ScoredEnvironment(
+                    env=e,
+                    score=0.8,
+                    explanation=["stub"],
+                    git_info=None,
+                    has_project_files=False,
+                    is_orphan=True,
+                    num_packages=0,
+                )
+                for e in envs
+            ]
+            mock_score.return_value = scored
+            result = runner.invoke(cli, ["doctor", "--path", "/tmp"] + args)
+        return result
+
+    def test_exits_zero_on_empty(self) -> None:
+        result = self._run([])
+        assert result.exit_code == 0
+
+    def test_no_envs_message(self) -> None:
+        result = self._run([])
+        assert "No environments found" in result.output
+
+    def test_json_output_structure(self) -> None:
+        envs = [_env(name="a", size=1_000_000)]
+        result = self._run(["--json"], envs=envs)
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert "total_environments" in data
+        assert "suggestions" in data
+        assert data["total_environments"] == 1
+
+    def test_rich_output_contains_health_header(self) -> None:
+        envs = [_env(name="bigenv", size=500_000_000)]
+        result = self._run([], envs=envs)
+        assert (
+            "Health" in result.output
+            or "Offender" in result.output
+            or "bigenv" in result.output
+        )
+
+    def test_doctor_help(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["doctor", "--help"])
         assert result.exit_code == 0
         assert "--json" in result.output

@@ -10,18 +10,16 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
-import pytest
-
-from killpy.detectors.venv import VenvDetector
 from killpy.detectors import venv as venv_mod
-from killpy.detectors.pyenv import PyenvDetector, _pyenv_versions_root
 from killpy.detectors.cache import CacheDetector
+from killpy.detectors.pyenv import PyenvDetector
+from killpy.detectors.venv import VenvDetector
 from killpy.models import Environment
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_venv(root: Path, name: str = ".venv") -> Path:
     """Create a minimal venv directory (pyvenv.cfg marker)."""
@@ -42,6 +40,7 @@ def _make_pycache(root: Path, parent: str = "src") -> Path:
 # ---------------------------------------------------------------------------
 # VenvDetector
 # ---------------------------------------------------------------------------
+
 
 class TestVenvDetector:
     def test_finds_named_venv(self, tmp_path: Path) -> None:
@@ -121,16 +120,18 @@ class TestVenvDetector:
         assert len(envs) == 1
 
     def test_skips_venv_when_resolve_raises(self, tmp_path: Path) -> None:
-        """Non-existent .venv fed into loop1 → resolve(strict=True) raises (lines 77-78)."""
+        """Non-existent .venv fed into loop1 → resolve raises (lines 77-78)."""
         ghost = tmp_path / ".venv"  # does NOT exist on disk
         with patch.object(venv_mod, "_iter_dirs_named", return_value=iter([ghost])):
             envs = VenvDetector().detect(tmp_path)
         assert envs == []
 
     def test_skips_pyvenv_cfg_when_resolve_raises(self, tmp_path: Path) -> None:
-        """Non-existent venv_dir from pyvenv.cfg loop → resolve raises (lines 89-90)."""
+        """Non-existent venv_dir from pyvenv.cfg loop → resolve raises."""
         ghost_cfg = tmp_path / "ghost" / "pyvenv.cfg"  # parent doesn't exist
-        with patch.object(venv_mod, "_iter_files_named", return_value=iter([ghost_cfg])):
+        with patch.object(
+            venv_mod, "_iter_files_named", return_value=iter([ghost_cfg])
+        ):
             envs = VenvDetector().detect(tmp_path)
         assert envs == []
 
@@ -138,6 +139,7 @@ class TestVenvDetector:
 # ---------------------------------------------------------------------------
 # PyenvDetector
 # ---------------------------------------------------------------------------
+
 
 class TestPyenvDetector:
     def _fake_versions_root(self, tmp_path: Path) -> Path:
@@ -149,7 +151,9 @@ class TestPyenvDetector:
 
     def test_finds_pyenv_versions(self, tmp_path: Path) -> None:
         versions_root = self._fake_versions_root(tmp_path)
-        with patch("killpy.detectors.pyenv._pyenv_versions_root", return_value=versions_root):
+        with patch(
+            "killpy.detectors.pyenv._pyenv_versions_root", return_value=versions_root
+        ):
             detector = PyenvDetector()
             envs = detector.detect(tmp_path)
         assert len(envs) == 2
@@ -160,14 +164,18 @@ class TestPyenvDetector:
     def test_returns_empty_when_no_versions(self, tmp_path: Path) -> None:
         versions_root = tmp_path / "pyenv" / "versions"
         versions_root.mkdir(parents=True)
-        with patch("killpy.detectors.pyenv._pyenv_versions_root", return_value=versions_root):
+        with patch(
+            "killpy.detectors.pyenv._pyenv_versions_root", return_value=versions_root
+        ):
             detector = PyenvDetector()
             envs = detector.detect(tmp_path)
         assert envs == []
 
     def test_can_handle_true_when_dir_exists(self, tmp_path: Path) -> None:
         versions_root = self._fake_versions_root(tmp_path)
-        with patch("killpy.detectors.pyenv._pyenv_versions_root", return_value=versions_root):
+        with patch(
+            "killpy.detectors.pyenv._pyenv_versions_root", return_value=versions_root
+        ):
             detector = PyenvDetector()
             assert detector.can_handle() is True
 
@@ -179,7 +187,9 @@ class TestPyenvDetector:
 
     def test_env_type_is_pyenv(self, tmp_path: Path) -> None:
         versions_root = self._fake_versions_root(tmp_path)
-        with patch("killpy.detectors.pyenv._pyenv_versions_root", return_value=versions_root):
+        with patch(
+            "killpy.detectors.pyenv._pyenv_versions_root", return_value=versions_root
+        ):
             detector = PyenvDetector()
             envs = detector.detect(tmp_path)
         assert all(e.type == "pyenv" for e in envs)
@@ -188,6 +198,7 @@ class TestPyenvDetector:
 # ---------------------------------------------------------------------------
 # CacheDetector
 # ---------------------------------------------------------------------------
+
 
 class TestCacheDetector:
     def test_finds_pycache(self, tmp_path: Path) -> None:

@@ -8,9 +8,10 @@ makes the contract between layers explicit and IDE-friendly.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from typing import Literal
 
 from killpy.files import format_size
 
@@ -86,3 +87,76 @@ class Environment:
             "managed_by": self.managed_by,
             "is_system_critical": self.is_system_critical,
         }
+
+
+# ---------------------------------------------------------------------------
+# Intelligence layer models
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class GitInfo:
+    """Git repository metadata for an environment's parent project."""
+
+    is_git_repo: bool
+    is_active: bool
+    last_commit: datetime | None = None
+    repo_root: Path | None = None
+
+
+@dataclass
+class ScoredEnvironment:
+    """An :class:`Environment` enriched with scoring metadata.
+
+    Wraps the original environment via composition so that existing code
+    consuming plain :class:`Environment` objects is unaffected.
+    """
+
+    env: Environment
+    score: float  # 0.0 (keep) – 1.0 (delete)
+    explanation: list[str] = field(default_factory=list)
+    git_info: GitInfo | None = None
+    has_project_files: bool = False
+    is_orphan: bool = False
+    num_packages: int = 0
+
+
+@dataclass
+class Suggestion:
+    """An actionable recommendation for a single environment."""
+
+    env_path: Path
+    score: float
+    category: Literal["HIGH", "MEDIUM", "LOW"]
+    reasons: list[str]
+    recommended_action: str
+
+
+@dataclass
+class ScanRecord:
+    """A persisted snapshot of one scan session."""
+
+    timestamp: datetime
+    total_space_found: int
+    total_space_deleted: int
+    environments_count: int
+    scan_path: str
+
+    def to_dict(self) -> dict:
+        return {
+            "timestamp": self.timestamp.isoformat(),
+            "total_space_found": self.total_space_found,
+            "total_space_deleted": self.total_space_deleted,
+            "environments_count": self.environments_count,
+            "scan_path": self.scan_path,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> ScanRecord:
+        return cls(
+            timestamp=datetime.fromisoformat(data["timestamp"]),
+            total_space_found=data["total_space_found"],
+            total_space_deleted=data["total_space_deleted"],
+            environments_count=data["environments_count"],
+            scan_path=data["scan_path"],
+        )

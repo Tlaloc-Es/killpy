@@ -46,8 +46,8 @@ class CondaDetector(AbstractDetector):
             return []
 
         envs: list[Environment] = []
-        for line in result.stdout.splitlines():
-            line = line.strip()
+        for raw_line in result.stdout.splitlines():
+            line = raw_line.strip()
             if not line or line.startswith("#"):
                 continue
 
@@ -65,7 +65,8 @@ class CondaDetector(AbstractDetector):
                 stat = env_path.stat()
                 size = get_total_size(env_path)
                 mtime = datetime.fromtimestamp(
-                    stat.st_mtime, tz=timezone.utc,
+                    stat.st_mtime,
+                    tz=timezone.utc,
                 )
                 envs.append(
                     Environment(

@@ -11,6 +11,7 @@ from rich.console import Console
 
 from killpy.cleaner import Cleaner, CleanerError
 from killpy.files import format_size
+from killpy.intelligence.tracker import UsageTracker
 from killpy.models import Environment
 from killpy.scanner import Scanner
 
@@ -29,9 +30,7 @@ def _filter_envs(
 
     if older_than is not None:
         cutoff = now - timedelta(days=older_than)
-        result = [
-            e for e in result if e.last_accessed < cutoff
-        ]
+        result = [e for e in result if e.last_accessed < cutoff]
 
     return result
 
@@ -134,6 +133,12 @@ def delete_cmd(
         f"Freed [bold]{format_size(freed)}[/bold]"
         + (f" — [red]{errors} error(s)[/red]" if errors else "")
     )
+
+    # Best-effort: record deletion in history.
+    try:
+        UsageTracker().record_deletion(freed)
+    except Exception:  # noqa: BLE001
+        pass
 
     if errors:
         sys.exit(1)

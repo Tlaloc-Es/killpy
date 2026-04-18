@@ -9,9 +9,11 @@ from killpy.cleaner import Cleaner
 from killpy.cli import TableApp
 from killpy.commands.clean import clean
 from killpy.commands.delete import delete_cmd
+from killpy.commands.doctor import doctor_cmd
 from killpy.commands.list import list_cmd
 from killpy.commands.stats import stats_cmd
 from killpy.files import format_size
+from killpy.intelligence.tracker import UsageTracker
 from killpy.scanner import Scanner
 
 
@@ -63,6 +65,12 @@ def _run_delete_all(path: Path, excluded: set[str], yes: bool) -> None:
         f"freed [bold]{format_size(freed)}[/bold]."
     )
 
+    # Best-effort: record deletion in history.
+    try:
+        UsageTracker().record_deletion(freed)
+    except Exception:  # noqa: BLE001
+        pass
+
 
 @click.group(invoke_without_command=True)
 @click.option(
@@ -109,6 +117,7 @@ cli.add_command(clean)
 cli.add_command(list_cmd, name="list")
 cli.add_command(delete_cmd, name="delete")
 cli.add_command(stats_cmd, name="stats")
+cli.add_command(doctor_cmd, name="doctor")
 
 
 if __name__ == "__main__":
