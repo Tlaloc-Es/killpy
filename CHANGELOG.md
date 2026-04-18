@@ -1,3 +1,9 @@
+## 0.21.0 (2026-04-18)
+
+### Feat
+
+- add intelligence layer with scoring, suggestions, and usage tracking
+
 ## 0.20.0 (2026-04-13)
 
 ## 0.19.2 (2026-04-10)
