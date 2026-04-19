@@ -1,3 +1,10 @@
+## 0.22.0 (2026-04-19)
+
+### Feat
+
+- **pre-commit**: enhance hooks with detailed descriptions
+- **commands**: add shared utility for filtering environments
+
 ## 0.21.0 (2026-04-18)
 
 ### Feat
