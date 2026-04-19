@@ -2,9 +2,13 @@
 
 ![Logo](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/logo.png)
 
-### Reclaim disk space by finding and deleting Python environments you no longer use
+### Free GBs of disk space by removing unused Python environments
 
-Python environment cleaner for virtualenv, Conda, Poetry, pipx, pyenv, tox, Pipenv, Hatch, uv, caches, and build artifacts.
+Find and delete old `.venv`, conda, poetry, pipenv, uv and more — safely, in seconds.
+
+```bash
+uvx killpy --path ~
+```
 
 [Documentation](https://tlaloc-es.github.io/killpy/)
 
@@ -495,17 +499,43 @@ Each virtual environment is a full copy (or symlinked tree) of a Python interpre
 
 ______________________________________________________________________
 
-## Pre-commit hook
+## Pre-commit hooks
 
-Keep your repo free of `__pycache__` on every commit:
+`killpy` ships four hooks for [pre-commit](https://pre-commit.com/). Add the ones you need to your `.pre-commit-config.yaml`:
+
+```yaml
+- repo: https://github.com/Tlaloc-Es/KillPy
+  rev: 0.20.0
+  hooks:
+    - id: killpy                  # remove __pycache__ on every commit
+    - id: killpy-clean-caches     # also removes .mypy_cache, .pytest_cache, .ruff_cache
+    - id: killpy-clean-artifacts  # remove dist/, build/, *.egg-info before committing
+    - id: killpy-remove-venv      # remove .venv (manual stage — see below)
+```
+
+| Hook id | What it removes | Default stage |
+|---------|-----------------|---------------|
+| `killpy` | `__pycache__` directories | `pre-commit` |
+| `killpy-clean-caches` | All local cache dirs (`__pycache__`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`) | `pre-commit` |
+| `killpy-clean-artifacts` | Build artifacts (`dist/`, `build/`, `*.egg-info`) | `pre-commit` |
+| `killpy-remove-venv` | Local `.venv` environments | `manual` |
+
+**`killpy-remove-venv`** is staged as `manual` because deleting the environment on every commit would require you to recreate it each time. Run it explicitly when you want a clean slate:
+
+```bash
+pre-commit run killpy-remove-venv --hook-stage manual
+```
+
+Typical minimal setup (safe for daily use):
 
 ```yaml
 - repo: https://github.com/Tlaloc-Es/KillPy
   rev: 0.21.0
   hooks:
     - id: killpy
-      pass_filenames: false
 ```
+
+Add `killpy-clean-artifacts` if your project generates `dist/` or `build/` locally and you want to guarantee they are never staged by accident.
 
 ______________________________________________________________________
 

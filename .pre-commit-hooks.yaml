@@ -1,5 +1,35 @@
 - id: killpy
-  name: killpy
-  description: Clean repo
+  name: killpy - clean __pycache__
+  description: Remove __pycache__ directories from the repository.
   entry: killpy clean
   language: python
+  pass_filenames: false
+
+- id: killpy-clean-caches
+  name: killpy - clean all caches
+  description: >
+    Remove all Python cache directories (__pycache__, .mypy_cache,
+    .pytest_cache, .ruff_cache) from the repository.
+  entry: killpy delete --type cache --yes
+  language: python
+  pass_filenames: false
+
+- id: killpy-clean-artifacts
+  name: killpy - clean build artifacts
+  description: >
+    Remove build artifacts (dist/, build/, *.egg-info) from the repository.
+    Useful to prevent accidentally staging generated files.
+  entry: killpy delete --type artifacts --yes
+  language: python
+  pass_filenames: false
+
+- id: killpy-remove-venv
+  name: killpy - remove .venv
+  description: >
+    Remove local .venv virtual environments under the repository root.
+    DESTRUCTIVE — the environment will need to be recreated afterwards.
+    Recommended for CI or manual stage only.
+  entry: killpy delete --type venv --yes
+  language: python
+  pass_filenames: false
+  stages: [manual]
