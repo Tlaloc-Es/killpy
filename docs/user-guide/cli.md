@@ -76,6 +76,33 @@ killpy stats --history           # show cumulative scan history from ~/.killpy/h
 
 The `--history` flag reads from the tracker database (`~/.killpy/history.json`) and shows aggregated totals across all past scans and deletions — useful to see how much space has been reclaimed over time.
 
+## `killpy find`
+
+Use `find` to locate every environment that has a specific package installed, with full support for PEP 508 / uv-style version specifiers.
+
+```bash
+killpy find requests
+killpy find "requests>=2.28"
+killpy find "numpy>=1.24,<2.0"
+killpy find "django==4.2.*"
+killpy find "scipy~=1.11"
+```
+
+Optional flags:
+
+```bash
+# Limit the scan to a specific root directory
+killpy find "fastapi>=0.100" --path ~/projects
+
+# Filter by environment type
+killpy find torch --type venv --type conda
+
+# Machine-readable output
+killpy find "numpy>=2" --json
+```
+
+The command reads `*.dist-info/METADATA` files from each environment's `site-packages` directory — no interpreter invocation is needed.
+
 ## `killpy doctor`
 
 Use `doctor` to get a smart health report that scores and prioritises environments for deletion.

@@ -412,6 +412,7 @@ version = "0.22.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
+    { name = "packaging" },
     { name = "rich" },
     { name = "textual" },
 ]
@@ -432,6 +433,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "click", specifier = ">=8.1.8" },
+    { name = "packaging", specifier = ">=24.0" },
     { name = "rich", specifier = ">=13.9.4" },
     { name = "textual", specifier = ">=1.0.0" },
 ]

@@ -11,6 +11,7 @@ from killpy.cli import TableApp
 from killpy.commands.clean import clean
 from killpy.commands.delete import delete_cmd
 from killpy.commands.doctor import doctor_cmd
+from killpy.commands.find import find_cmd
 from killpy.commands.list import list_cmd
 from killpy.commands.stats import stats_cmd
 from killpy.files import format_size
@@ -120,6 +121,7 @@ cli.add_command(list_cmd, name="list")
 cli.add_command(delete_cmd, name="delete")
 cli.add_command(stats_cmd, name="stats")
 cli.add_command(doctor_cmd, name="doctor")
+cli.add_command(find_cmd, name="find")
 
 
 if __name__ == "__main__":
