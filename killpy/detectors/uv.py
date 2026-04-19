@@ -44,7 +44,8 @@ class UvDetector(AbstractDetector):
                         stat = uv_path.stat()
                         size = get_total_size(uv_path)
                         mtime = datetime.fromtimestamp(
-                            stat.st_mtime, tz=timezone.utc,
+                            stat.st_mtime,
+                            tz=timezone.utc,
                         )
                         envs.append(
                             Environment(
@@ -60,5 +61,4 @@ class UvDetector(AbstractDetector):
                     pruned.add(d)
             directories[:] = [d for d in directories if d not in pruned]
 
-        envs.sort(key=lambda e: e.size_bytes, reverse=True)
         return envs

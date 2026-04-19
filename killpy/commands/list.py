@@ -3,37 +3,15 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import click
 from rich.console import Console
 from rich.table import Table
 
+from killpy.commands._utils import filter_envs
 from killpy.files import format_size
-from killpy.models import Environment
 from killpy.scanner import Scanner
-
-
-def _filter_envs(
-    envs: list[Environment],
-    types: tuple[str, ...] | None,
-    older_than: int | None,
-) -> list[Environment]:
-    now = datetime.now(tz=timezone.utc)
-    result = envs
-
-    if types:
-        type_set = {t.strip().lower() for t in types}
-        result = [e for e in result if e.type.lower() in type_set]
-
-    if older_than is not None:
-        cutoff = now - timedelta(days=older_than)
-        result = [
-            e for e in result if e.last_accessed < cutoff
-        ]
-
-    return result
 
 
 @click.command("list")
@@ -87,14 +65,14 @@ def list_cmd(
     if as_json_stream:
 
         def _stream_progress(_detector, envs):
-            for env in _filter_envs(envs, types or None, older_than):
+            for env in filter_envs(envs, types or None, older_than):
                 click.echo(json.dumps(env.to_dict()))
 
         scanner.scan(path, on_progress=_stream_progress)
         return
 
     envs = scanner.scan(path)
-    envs = _filter_envs(envs, types or None, older_than)
+    envs = filter_envs(envs, types or None, older_than)
 
     if as_json:
         click.echo(json.dumps([e.to_dict() for e in envs], indent=2))

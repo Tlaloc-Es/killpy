@@ -50,7 +50,8 @@ class ArtifactsDetector(AbstractDetector):
                         stat = artifact_path.stat()
                         size = get_total_size(artifact_path)
                         mtime = datetime.fromtimestamp(
-                            stat.st_mtime, tz=timezone.utc,
+                            stat.st_mtime,
+                            tz=timezone.utc,
                         )
                         envs.append(
                             Environment(
@@ -66,5 +67,4 @@ class ArtifactsDetector(AbstractDetector):
                     pruned.add(d)  # don't recurse inside
             directories[:] = [d for d in directories if d not in pruned]
 
-        envs.sort(key=lambda e: e.size_bytes, reverse=True)
         return envs

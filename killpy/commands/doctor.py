@@ -10,6 +10,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
+from killpy.detectors import ALL_DETECTORS
 from killpy.files import format_size
 from killpy.intelligence import SuggestionEngine, UsageTracker, score_all
 from killpy.models import Suggestion
@@ -29,16 +30,9 @@ _TOP_N = 5
 
 # Detectors that surface virtual environments.  Cache / artifact detectors
 # are intentionally excluded from doctor – use `killpy clean` for those.
+_CACHE_ARTIFACT_TYPES: frozenset[str] = frozenset({"cache", "artifacts"})
 _ENV_TYPES: set[str] = {
-    "venv",
-    "poetry",
-    "conda",
-    "pipx",
-    "pyenv",
-    "pipenv",
-    "hatch",
-    "uv",
-    "tox",
+    cls.name for cls in ALL_DETECTORS if cls.name not in _CACHE_ARTIFACT_TYPES
 }
 
 

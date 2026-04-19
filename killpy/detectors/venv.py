@@ -89,7 +89,6 @@ class VenvDetector(AbstractDetector):
             except (FileNotFoundError, OSError) as exc:
                 logger.debug("Skipping %s: %s", venv_dir, exc)
 
-        envs.sort(key=lambda e: e.size_bytes, reverse=True)
         return envs
 
 

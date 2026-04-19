@@ -49,7 +49,8 @@ class PipenvDetector(AbstractDetector):
                     stat = venv_path.stat()
                     size = get_total_size(venv_path)
                     mtime = datetime.fromtimestamp(
-                        stat.st_mtime, tz=timezone.utc,
+                        stat.st_mtime,
+                        tz=timezone.utc,
                     )
                     envs.append(
                         Environment(
@@ -66,5 +67,4 @@ class PipenvDetector(AbstractDetector):
             logger.error("Cannot inspect pipenv venvs root: %s", exc)
             return []
 
-        envs.sort(key=lambda e: e.size_bytes, reverse=True)
         return envs

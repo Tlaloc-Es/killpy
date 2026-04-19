@@ -50,7 +50,8 @@ class PyenvDetector(AbstractDetector):
                     stat = version_dir.stat()
                     size = get_total_size(version_dir)
                     mtime = datetime.fromtimestamp(
-                        stat.st_mtime, tz=timezone.utc,
+                        stat.st_mtime,
+                        tz=timezone.utc,
                     )
                     envs.append(
                         Environment(
@@ -67,5 +68,4 @@ class PyenvDetector(AbstractDetector):
             logger.error("Cannot inspect pyenv versions root: %s", exc)
             return []
 
-        envs.sort(key=lambda e: e.size_bytes, reverse=True)
         return envs

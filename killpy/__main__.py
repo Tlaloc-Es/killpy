@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import click
@@ -102,6 +103,7 @@ def _run_delete_all(path: Path, excluded: set[str], yes: bool) -> None:
 )
 @click.pass_context
 def cli(ctx, path: Path, exclude: str, delete_all: bool, yes: bool):
+    logging.basicConfig(level=logging.WARNING)
     excluded = (
         {p.strip() for p in exclude.split(",") if p.strip()} if exclude else set()
     )

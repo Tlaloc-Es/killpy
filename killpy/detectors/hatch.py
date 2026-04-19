@@ -56,7 +56,8 @@ class HatchDetector(AbstractDetector):
                         stat = env_dir.stat()
                         size = get_total_size(env_dir)
                         mtime = datetime.fromtimestamp(
-                            stat.st_mtime, tz=timezone.utc,
+                            stat.st_mtime,
+                            tz=timezone.utc,
                         )
                         envs.append(
                             Environment(
@@ -73,5 +74,4 @@ class HatchDetector(AbstractDetector):
             logger.error("Cannot inspect hatch envs root: %s", exc)
             return []
 
-        envs.sort(key=lambda e: e.size_bytes, reverse=True)
         return envs
