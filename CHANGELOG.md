@@ -1,3 +1,9 @@
+## 0.23.0 (2026-04-19)
+
+### Feat
+
+- **find**: implement `killpy find` command to locate environments with specific packages
+
 ## 0.22.0 (2026-04-19)
 
 ### Feat
