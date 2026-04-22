@@ -26,6 +26,31 @@ uvx killpy --path ~
 
 ______________________________________________________________________
 
+## Table of Contents
+
+- [The Problem](#the-problem)
+  - [What killpy detects](#what-killpy-detects)
+- [Quickstart](#quickstart)
+- [Interactive TUI](#interactive-tui)
+  - [Keyboard shortcuts](#keyboard-shortcuts)
+  - [Search / filter](#search--filter)
+  - [Multi-select mode](#multi-select-mode)
+- [CLI reference](#cli-reference)
+  - [`killpy` — launch TUI or headless delete](#killpy--launch-tui-or-headless-delete)
+  - [`killpy list` — inspect environments](#killpy-list--inspect-environments)
+  - [`killpy delete` — remove environments](#killpy-delete--remove-environments)
+  - [`killpy stats` — disk usage summary](#killpy-stats--disk-usage-summary)
+  - [`killpy clean` — remove cache directories](#killpy-clean--remove-cache-directories)
+  - [`killpy doctor` — smart health report](#killpy-doctor--smart-health-report)
+- [killpy vs alternatives](#killpy-vs-alternatives)
+- [FAQ](#faq)
+- [Pre-commit hooks](#pre-commit-hooks)
+- [Safety](#safety)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+
+______________________________________________________________________
+
 ## The Problem
 
 If you have been writing Python for more than a year, your disk is probably full of environments you forgot about.
