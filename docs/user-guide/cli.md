@@ -31,7 +31,10 @@ killpy list --type venv --type conda
 killpy list --older-than 90
 killpy list --json
 killpy list --json-stream
+killpy list --quiet          # suppress progress output
 ```
+
+While scanning, progress is written to **stderr** so stdout stays clean for piping. Use `--quiet` / `-q` to silence progress entirely (useful in scripts or CI).
 
 `--json-stream` emits NDJSON progressively while the scan runs.
 

@@ -231,7 +231,10 @@ killpy list --type venv --type conda      # filter by type (repeatable)
 killpy list --older-than 90               # not accessed in the last 90 days
 killpy list --json                        # output as a JSON array
 killpy list --json-stream                 # stream as NDJSON — one line per env
+killpy list --quiet                       # suppress progress output (scripts/CI)
 ```
+
+While scanning, `killpy list` shows a live progress indicator on **stderr** so you can see which detector is running. Stdout receives only the final output (table, JSON, or NDJSON), so pipes and redirections are never polluted. Use `--quiet` / `-q` to silence the progress indicator entirely.
 
 `--json` example output:
 
@@ -434,8 +437,11 @@ Deletes every `.venv` / `pyvenv.cfg` env not accessed in the last 90 days, witho
 **How do I use killpy in a CI pipeline or script?**
 
 ```bash
-# List as machine-readable JSON
+# List as machine-readable JSON (progress goes to stderr, JSON to stdout)
 killpy list --json
+
+# Suppress progress output entirely with --quiet / -q
+killpy list --json --quiet | jq '.[] | .size_human'
 
 # Stream results as NDJSON in real time
 killpy list --json-stream | jq '.size_bytes'
@@ -443,6 +449,8 @@ killpy list --json-stream | jq '.size_bytes'
 # Delete everything without a TUI
 killpy --path ./build_artifacts --delete-all --yes
 ```
+
+Progress messages always go to **stderr**, so stdout is clean for piping even without `--quiet`. Use `-q` when you want no output at all on stderr.
 
 **How do I skip certain directories?**
 

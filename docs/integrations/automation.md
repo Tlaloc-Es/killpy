@@ -37,6 +37,12 @@ Generate machine-readable output:
 killpy list --path ~/projects --json
 ```
 
+Progress messages go to **stderr**, so stdout is clean for piping. Add `--quiet` / `-q` to suppress progress entirely:
+
+```bash
+killpy list --path ~/projects --json --quiet | jq '.[] | .size_human'
+```
+
 Stream results progressively:
 
 ```bash

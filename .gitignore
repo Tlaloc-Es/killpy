@@ -13,7 +13,7 @@ wheels/
 .env
 
 # Test
-demo_projects/
+**/demo_projects/
 
 # Coverage / pytest-cov outputs
 .coverage
