@@ -563,7 +563,7 @@ Typical minimal setup (safe for daily use):
 
 ```yaml
 - repo: https://github.com/Tlaloc-Es/KillPy
-  rev: 0.23.0
+  rev: 0.24.0
   hooks:
     - id: killpy
 ```

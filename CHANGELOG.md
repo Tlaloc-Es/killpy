@@ -1,3 +1,9 @@
+## 0.24.0 (2026-04-23)
+
+### Feat
+
+- **list**: add --quiet option to suppress progress output
+
 ## 0.23.0 (2026-04-19)
 
 ### Feat
