@@ -10,6 +10,8 @@ Find and delete old `.venv`, conda, poetry, pipenv, uv and more — safely, in s
 uvx killpy --path ~
 ```
 
+> ⭐ Featured in [awesome-python](https://github.com/vinta/awesome-python) — a curated list of the best Python tools
+
 [Documentation](https://tlaloc-es.github.io/killpy/)
 
 [![PyPI](https://img.shields.io/pypi/v/killpy.svg)](https://pypi.org/project/killpy/)
