@@ -25,7 +25,7 @@ from textual.widgets import (
 from killpy.cleaner import Cleaner, CleanerError
 from killpy.cleaners import remove_pycache
 from killpy.files import format_size
-from killpy.intelligence import SuggestionEngine, score_all
+from killpy.intelligence import SuggestionEngine, UsageTracker, score_all
 from killpy.models import Environment
 from killpy.scanner import Scanner
 
@@ -145,6 +145,7 @@ class TableApp(App):
         self._selected_venv_indices: set[int] = set()
         self._health_by_path: dict[str, str] = {}
         self.cleaner = Cleaner()
+        self.tracker = UsageTracker()
         self.scanner = Scanner(
             types={
                 "venv",
@@ -572,7 +573,26 @@ class TableApp(App):
         status_label.update(
             f"Found {venv_count} virtual environments and {pipx_count} pipx packages"
         )
+        self._record_scan()
         await self._compute_health_scores()
+
+    def _record_scan(self) -> None:
+        """Persist this scan session so ``killpy stats --history`` reflects it."""
+        try:
+            envs = [row["environment"] for row in self.venv_rows]
+            envs += [row["environment"] for row in self.pipx_rows]
+            self.tracker.record_scan_result(envs, self.root_dir)
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _record_deletion(self, freed: int) -> None:
+        """Best-effort: add *freed* bytes to the current history record."""
+        if freed <= 0:
+            return
+        try:
+            self.tracker.record_deletion(freed)
+        except Exception:  # noqa: BLE001
+            pass
 
     async def _compute_health_scores(self) -> None:
         """Score venv environments and populate the Health column."""
@@ -614,6 +634,7 @@ class TableApp(App):
 
     @is_venv_tab
     def action_confirm_delete(self):
+        freed_now = 0
         if self._multi_select_mode and self._selected_venv_indices:
             # Multi-select mode: delete all selected rows
             for data_index in list(self._selected_venv_indices):
@@ -621,6 +642,7 @@ class TableApp(App):
                 if row["status"] == EnvStatus.DELETED.value:
                     continue
                 if self.delete_environment(row["environment"]):
+                    freed_now += int(row["size"])
                     self.bytes_release += int(row["size"])
                     row["status"] = EnvStatus.DELETED.value
             self._selected_venv_indices.clear()
@@ -630,9 +652,11 @@ class TableApp(App):
                 if row["status"] != EnvStatus.MARKED_TO_DELETE.value:
                     continue
                 if self.delete_environment(row["environment"]):
+                    freed_now += int(row["size"])
                     self.bytes_release += int(row["size"])
                     row["status"] = EnvStatus.DELETED.value
 
+        self._record_deletion(freed_now)
         self.render_venv_table()
         self.query_one("#status-label", Label).update(
             f"{format_size(self.bytes_release)} deleted"
@@ -675,6 +699,7 @@ class TableApp(App):
                 return
             if self.delete_environment(row["environment"]):
                 self.bytes_release += int(row["size"])
+                self._record_deletion(int(row["size"]))
                 row["status"] = EnvStatus.DELETED.value
                 table.update_cell_at(
                     (cursor_cell.row, self.VENV_COL_STATUS),
@@ -706,6 +731,7 @@ class TableApp(App):
                 row["status"] = EnvStatus.DELETED.value
                 table.update_cell_at((cursor_cell.row, 3), EnvStatus.DELETED.value)
                 self.bytes_release += int(row["size"])
+                self._record_deletion(int(row["size"]))
                 self.query_one("#status-label", Label).update(
                     f"{format_size(self.bytes_release)} deleted"
                 )

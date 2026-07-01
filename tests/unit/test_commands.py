@@ -15,6 +15,7 @@ from click.testing import CliRunner, Result
 
 from killpy.__main__ import cli
 from killpy.cleaner import CleanerError
+from killpy.intelligence.tracker import UsageTracker
 from killpy.models import Environment, ScoredEnvironment
 
 # ---------------------------------------------------------------------------
@@ -267,6 +268,43 @@ class TestDeleteFilters:
             )
         assert result.exit_code == 1
         assert "broken" in result.output or "kaboom" in result.output
+
+
+class TestDeleteHistoryRecording:
+    """`killpy delete` must persist a scan record and the freed bytes so that
+    `killpy stats --history` reflects real cleanups (regression: record_scan
+    was never called, leaving history permanently empty)."""
+
+    def test_delete_populates_history(self, tmp_path: Path) -> None:
+        tracker = UsageTracker(tmp_path / "history.json")
+        envs = [_env(name="proj_a", size=2048), _env(name="proj_b", size=1024)]
+        with (
+            patch("killpy.commands.delete.Scanner") as mock_scanner,
+            patch("killpy.commands.delete.Cleaner") as mock_cleaner,
+            patch("killpy.commands.delete.UsageTracker", return_value=tracker),
+        ):
+            mock_scanner.return_value.scan.return_value = envs
+            mock_cleaner.return_value.delete.side_effect = lambda e: e.size_bytes
+            result = CliRunner().invoke(cli, ["delete", "--path", "/tmp", "--yes"])
+
+        assert result.exit_code == 0
+        records = tracker.get_history()
+        assert len(records) == 1
+        assert records[0].environments_count == 2
+        assert records[0].total_space_found == 3072
+        assert records[0].total_space_deleted == 3072
+
+    def test_dry_run_does_not_touch_history(self, tmp_path: Path) -> None:
+        tracker = UsageTracker(tmp_path / "history.json")
+        with (
+            patch("killpy.commands.delete.Scanner") as mock_scanner,
+            patch("killpy.commands.delete.UsageTracker", return_value=tracker),
+        ):
+            mock_scanner.return_value.scan.return_value = [_env(name="x")]
+            CliRunner().invoke(cli, ["delete", "--path", "/tmp", "--dry-run", "--yes"])
+
+        assert tracker.get_history() == []
+        assert not (tmp_path / "history.json").exists()
 
 
 class TestHelpOutput:

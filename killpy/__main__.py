@@ -52,6 +52,14 @@ def _run_delete_all(path: Path, excluded: set[str], yes: bool) -> None:
             console.print("Aborted.")
             return
 
+    # Record this cleanup session up-front so `killpy stats --history` reflects
+    # it; record_deletion() below updates the same record with the freed bytes.
+    tracker = UsageTracker()
+    try:
+        tracker.record_scan_result(envs, path)
+    except Exception:  # noqa: BLE001
+        pass
+
     deleted = 0
     freed = 0
     for env in envs:
@@ -67,9 +75,9 @@ def _run_delete_all(path: Path, excluded: set[str], yes: bool) -> None:
         f"freed [bold]{format_size(freed)}[/bold]."
     )
 
-    # Best-effort: record deletion in history.
+    # Best-effort: update the history record created above with freed bytes.
     try:
-        UsageTracker().record_deletion(freed)
+        tracker.record_deletion(freed)
     except Exception:  # noqa: BLE001
         pass
 

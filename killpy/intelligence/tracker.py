@@ -6,9 +6,11 @@ import json
 import logging
 import os
 import tempfile
+from collections.abc import Iterable
+from datetime import datetime, timezone
 from pathlib import Path
 
-from killpy.models import ScanRecord, ScoredEnvironment
+from killpy.models import Environment, ScanRecord, ScoredEnvironment
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +36,32 @@ class UsageTracker:
         history = self._load()
         history.append(record.to_dict())
         self._save(history)
+
+    def record_scan_result(
+        self,
+        environments: Iterable[Environment],
+        scan_path: Path | str,
+        *,
+        deleted_bytes: int = 0,
+    ) -> None:
+        """Persist a :class:`~killpy.models.ScanRecord` built from a scan result.
+
+        Convenience wrapper around :meth:`record_scan` so callers don't have to
+        assemble a :class:`ScanRecord` by hand.  Records the number of
+        environments found and their total size; ``deleted_bytes`` can be set
+        when the freed amount is already known, otherwise use
+        :meth:`record_deletion` afterwards to update the same record.
+        """
+        envs = list(environments)
+        self.record_scan(
+            ScanRecord(
+                timestamp=datetime.now(tz=timezone.utc),
+                total_space_found=sum(e.size_bytes for e in envs),
+                total_space_deleted=deleted_bytes,
+                environments_count=len(envs),
+                scan_path=str(scan_path),
+            )
+        )
 
     def record_deletion(self, size_bytes: int) -> None:
         """Increment the ``total_space_deleted`` counter of the last scan record."""

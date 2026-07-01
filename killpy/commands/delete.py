@@ -96,6 +96,14 @@ def delete_cmd(
             abort=True,
         )
 
+    # Record this cleanup session up-front so `killpy stats --history` reflects
+    # it; record_deletion() below updates the same record with the freed bytes.
+    tracker = UsageTracker()
+    try:
+        tracker.record_scan_result(envs, path)
+    except Exception:  # noqa: BLE001
+        pass
+
     cleaner = Cleaner(dry_run=False)
     freed = 0
     errors = 0
@@ -114,9 +122,9 @@ def delete_cmd(
         + (f" — [red]{errors} error(s)[/red]" if errors else "")
     )
 
-    # Best-effort: record deletion in history.
+    # Best-effort: update the history record created above with freed bytes.
     try:
-        UsageTracker().record_deletion(freed)
+        tracker.record_deletion(freed)
     except Exception:  # noqa: BLE001
         pass
 
