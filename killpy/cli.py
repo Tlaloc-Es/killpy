@@ -11,6 +11,7 @@ from typing import Any, TypedDict
 from rich.text import Text
 from textual.app import App, ComposeResult
 from textual.binding import Binding
+from textual.coordinate import Coordinate
 from textual.widgets import (
     DataTable,
     Footer,
@@ -142,7 +143,7 @@ class TableApp(App):
         self._filter_query: str = ""
         self._venv_display_indices: list[int] = []
         self._multi_select_mode: bool = False
-        self._selected_venv_indices: set[int] = set()
+        self._selected_venv_paths: set[str] = set()
         self._health_by_path: dict[str, str] = {}
         self.cleaner = Cleaner()
         self.tracker = UsageTracker()
@@ -396,7 +397,7 @@ class TableApp(App):
                 row["size"],
                 row["size_human"],
                 _health_text(row["health"]),
-                self._compute_row_status(i, row),
+                self._compute_row_status(row),
             )
 
     def render_pipx_table(self) -> None:
@@ -417,18 +418,18 @@ class TableApp(App):
             return data_index, self.venv_rows[data_index]
         return None
 
-    def _compute_row_status(self, data_index: int, row: VenvRow) -> str:
+    def _compute_row_status(self, row: VenvRow) -> str:
         """Return the status string to display, taking multi-select into account."""
         if row["status"] == EnvStatus.DELETED.value:
             return EnvStatus.DELETED.value
-        if self._multi_select_mode and data_index in self._selected_venv_indices:
+        if self._multi_select_mode and row["path"] in self._selected_venv_paths:
             return "\u25cf SELECTED"
         return row["status"]
 
     def _update_multi_select_label(self) -> None:
         label = self.query_one("#multi-select-label", Label)
         if self._multi_select_mode:
-            n = len(self._selected_venv_indices)
+            n = len(self._selected_venv_paths)
             label.add_class("visible")
             label.update(
                 f"[bold yellow]Multi-select[/bold yellow] — "
@@ -635,17 +636,20 @@ class TableApp(App):
     @is_venv_tab
     def action_confirm_delete(self):
         freed_now = 0
-        if self._multi_select_mode and self._selected_venv_indices:
-            # Multi-select mode: delete all selected rows
-            for data_index in list(self._selected_venv_indices):
-                row = self.venv_rows[data_index]
+        if self._multi_select_mode and self._selected_venv_paths:
+            # Multi-select mode: delete all selected rows.  Selection is
+            # tracked by path (not by list position) so it stays valid even
+            # after the rows have been re-sorted.
+            for row in self.venv_rows:
+                if row["path"] not in self._selected_venv_paths:
+                    continue
                 if row["status"] == EnvStatus.DELETED.value:
                     continue
                 if self.delete_environment(row["environment"]):
                     freed_now += int(row["size"])
                     self.bytes_release += int(row["size"])
                     row["status"] = EnvStatus.DELETED.value
-            self._selected_venv_indices.clear()
+            self._selected_venv_paths.clear()
         else:
             # Normal mode: delete all rows marked for deletion
             for row in self.venv_rows:
@@ -820,7 +824,7 @@ class TableApp(App):
         """Toggle multi-select mode on/off (T key)."""
         self._multi_select_mode = not self._multi_select_mode
         if not self._multi_select_mode:
-            self._selected_venv_indices.clear()
+            self._selected_venv_paths.clear()
         self._update_multi_select_label()
         self.render_venv_table()
 
@@ -836,17 +840,17 @@ class TableApp(App):
         resolved = self._resolve_venv_row(cursor_cell.row)
         if not resolved:
             return
-        data_index, row = resolved
+        _, row = resolved
         if row["status"] == EnvStatus.DELETED.value:
             return
-        if data_index in self._selected_venv_indices:
-            self._selected_venv_indices.discard(data_index)
+        if row["path"] in self._selected_venv_paths:
+            self._selected_venv_paths.discard(row["path"])
         else:
-            self._selected_venv_indices.add(data_index)
+            self._selected_venv_paths.add(row["path"])
         self._update_multi_select_label()
         table.update_cell_at(
-            (cursor_cell.row, self.VENV_COL_STATUS),
-            self._compute_row_status(data_index, row),
+            Coordinate(cursor_cell.row, self.VENV_COL_STATUS),
+            self._compute_row_status(row),
         )
 
     @is_venv_tab
@@ -855,13 +859,13 @@ class TableApp(App):
         if not self._multi_select_mode:
             return
         non_deleted = {
-            i
+            self.venv_rows[i]["path"]
             for i in self._venv_display_indices
             if self.venv_rows[i]["status"] != EnvStatus.DELETED.value
         }
-        if non_deleted == self._selected_venv_indices:
-            self._selected_venv_indices.clear()
+        if non_deleted == self._selected_venv_paths:
+            self._selected_venv_paths.clear()
         else:
-            self._selected_venv_indices = non_deleted
+            self._selected_venv_paths = non_deleted
         self._update_multi_select_label()
         self.render_venv_table()
