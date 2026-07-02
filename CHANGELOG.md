@@ -1,3 +1,10 @@
+## 0.24.1 (2026-07-02)
+
+### Fix
+
+- **tui**: track multi-select by path so sorting cannot delete wrong rows
+- **history**: record scan sessions so stats --history works
+
 ## 0.24.0 (2026-04-23)
 
 ### Feat
