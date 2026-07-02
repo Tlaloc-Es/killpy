@@ -714,8 +714,9 @@ class TableApp(App):
                 )
         self.bell()
 
-    @is_venv_tab
     def delete_environment(self, environment: Environment) -> bool:
+        # Shared helper — no tab gating here: it is called from both the
+        # venv tab (delete actions) and the pipx tab (uninstall action).
         try:
             self.cleaner.delete(environment)
             return True
