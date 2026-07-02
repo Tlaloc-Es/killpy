@@ -1,3 +1,18 @@
+## 0.24.2 (2026-07-02)
+
+### Fix
+
+- **uv**: detect real uv-managed assets instead of nonexistent .uv dirs
+- **cache**: skip caches inside environments to avoid double counting
+- **cache**: only surface global pip/uv caches when inside the scan path
+- **delete-all**: handle deletion errors instead of crashing mid-run
+- **tui**: make U key actually uninstall the selected pipx package
+- **artifacts**: stop reporting venv internals as deletable build artifacts
+
+### Refactor
+
+- **doctor**: remove unreachable HIGH classification rule
+
 ## 0.24.1 (2026-07-02)
 
 ### Fix

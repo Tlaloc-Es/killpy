@@ -566,7 +566,7 @@ Typical minimal setup (safe for daily use):
 
 ```yaml
 - repo: https://github.com/Tlaloc-Es/KillPy
-  rev: 0.24.1
+  rev: 0.24.2
   hooks:
     - id: killpy
 ```
