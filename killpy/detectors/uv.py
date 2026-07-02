@@ -1,4 +1,4 @@
-"""Detector for uv-managed virtual environments."""
+"""Detector for disk space owned by uv itself (tool envs and Pythons)."""
 
 from __future__ import annotations
 
@@ -14,51 +14,83 @@ from killpy.models import Environment
 
 logger = logging.getLogger(__name__)
 
-_PRUNED: frozenset[str] = frozenset({".git", ".hg", ".svn", "node_modules"})
+
+def _uv_data_dir() -> Path:
+    xdg = os.environ.get("XDG_DATA_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".local" / "share"
+    return base / "uv"
+
+
+def _uv_tools_dir() -> Path:
+    override = os.environ.get("UV_TOOL_DIR")
+    return Path(override) if override else _uv_data_dir() / "tools"
+
+
+def _uv_python_dir() -> Path:
+    override = os.environ.get("UV_PYTHON_INSTALL_DIR")
+    return Path(override) if override else _uv_data_dir() / "python"
 
 
 class UvDetector(AbstractDetector):
-    """Detects ``.uv`` directories created by `uv venv` inside projects.
+    """Detects environments managed by uv itself.
 
-    Also reports the global uv cache at ``~/.cache/uv`` – but only when
-    the cache detector is *not* included in the same scan (the scanner
-    handles deduplication by path).
+    Covers:
+
+    * Tool environments installed with ``uv tool install`` (uv's pipx
+      equivalent), stored under ``~/.local/share/uv/tools``.  Marked
+      ``managed_by="uv"`` so deletion goes through ``uv tool uninstall``
+      and the ``~/.local/bin`` shims are cleaned up too.
+    * Python versions installed with ``uv python install``, stored under
+      ``~/.local/share/uv/python``.
+
+    ``UV_TOOL_DIR``, ``UV_PYTHON_INSTALL_DIR`` and ``XDG_DATA_HOME`` are
+    honoured.  Project virtualenvs created by ``uv venv`` / ``uv sync``
+    are regular ``pyvenv.cfg`` environments reported by
+    :class:`~killpy.detectors.venv.VenvDetector`, and the global uv cache
+    is reported by the cache detector.  The scan *path* argument is
+    ignored.
     """
 
     name = "uv"
 
     def can_handle(self) -> bool:
-        return shutil.which("uv") is not None
+        return (
+            shutil.which("uv") is not None
+            or _uv_tools_dir().exists()
+            or _uv_python_dir().exists()
+        )
 
-    def detect(self, path: Path) -> list[Environment]:
+    def detect(self, path: Path) -> list[Environment]:  # noqa: ARG002
         envs: list[Environment] = []
-        for current_root, directories, _ in os.walk(path, topdown=True):
-            pruned = set()
-            for d in directories:
-                if d in _PRUNED:
-                    pruned.add(d)
-                    continue
-                if d == ".uv":
-                    uv_path = Path(current_root) / d
-                    try:
-                        stat = uv_path.stat()
-                        size = get_total_size(uv_path)
-                        mtime = datetime.fromtimestamp(
-                            stat.st_mtime,
-                            tz=timezone.utc,
-                        )
-                        envs.append(
-                            Environment(
-                                path=uv_path,
-                                name=str(uv_path),
-                                type="uv",
-                                last_accessed=mtime,
-                                size_bytes=size,
-                            )
-                        )
-                    except (FileNotFoundError, OSError) as exc:
-                        logger.debug("Skipping %s: %s", uv_path, exc)
-                    pruned.add(d)
-            directories[:] = [d for d in directories if d not in pruned]
+        envs.extend(self._scan_dir(_uv_tools_dir(), managed_by="uv"))
+        envs.extend(self._scan_dir(_uv_python_dir(), managed_by=None))
+        return envs
 
+    @staticmethod
+    def _scan_dir(root: Path, managed_by: str | None) -> list[Environment]:
+        if not root.exists():
+            return []
+        envs: list[Environment] = []
+        try:
+            for env_dir in root.iterdir():
+                if not env_dir.is_dir():
+                    continue
+                try:
+                    stat = env_dir.stat()
+                    size = get_total_size(env_dir)
+                    mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
+                    envs.append(
+                        Environment(
+                            path=env_dir,
+                            name=env_dir.name,
+                            type="uv",
+                            last_accessed=mtime,
+                            size_bytes=size,
+                            managed_by=managed_by,
+                        )
+                    )
+                except (FileNotFoundError, OSError) as exc:
+                    logger.debug("Skipping uv entry %s: %s", env_dir, exc)
+        except OSError as exc:
+            logger.error("Cannot inspect uv dir %s: %s", root, exc)
         return envs

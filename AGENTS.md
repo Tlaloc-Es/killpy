@@ -74,7 +74,7 @@ Package layout (`killpy/`):
   - `hatch.py` — Hatch environments
   - `pipenv.py` — Pipenv virtualenvs
   - `tox.py` — tox `.tox` directories
-  - `uv.py` — uv `.uv` directories
+  - `uv.py` — uv tool environments (`uv tool install`) and uv-managed Python installs
   - `artifacts.py` — build artifacts (`dist/`, `build/`, `*.egg-info`)
   - `cache.py` — cache dirs (`__pycache__`, `.mypy_cache`, `.pytest_cache`, …)
 

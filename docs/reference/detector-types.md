@@ -11,7 +11,7 @@ The scanner registers detectors in `killpy/detectors/__init__.py`.
 - `pyenv`: versions installed under the pyenv versions directory
 - `pipenv`: Pipenv virtual environments
 - `hatch`: Hatch environments
-- `uv`: uv environments
+- `uv`: environments managed by uv itself — tool environments from `uv tool install` (removed via `uv tool uninstall`) and Python versions from `uv python install`, both under `~/.local/share/uv`. Project virtualenvs created by `uv venv` / `uv sync` are regular `.venv` directories and are reported by the `venv` detector
 - `tox`: tox environments
 
 ## Additional scanner-only categories

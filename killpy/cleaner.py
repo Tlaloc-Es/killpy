@@ -11,8 +11,8 @@ Usage::
 The :class:`Cleaner` dispatches to the correct removal strategy based on
 :attr:`~killpy.models.Environment.managed_by`.  Environments with
 ``managed_by="conda"`` are removed via ``conda env remove``;
-``managed_by="pipx"`` via ``pipx uninstall``; all others via
-:func:`shutil.rmtree`.
+``managed_by="pipx"`` via ``pipx uninstall``; ``managed_by="uv"`` via
+``uv tool uninstall``; all others via :func:`shutil.rmtree`.
 """
 
 from __future__ import annotations
@@ -77,6 +77,8 @@ class Cleaner:
                 self._remove_conda(env.name)
             elif env.managed_by == "pipx":
                 self._remove_pipx(env.name)
+            elif env.managed_by == "uv":
+                self._remove_uv_tool(env.name)
             else:
                 self._remove_filesystem(env.path)
         except CleanerError:
@@ -160,4 +162,19 @@ class Cleaner:
         if result.returncode != 0:
             raise CleanerError(
                 f"pipx uninstall failed for '{package_name}': {result.stderr.strip()}"
+            )
+
+    @staticmethod
+    def _remove_uv_tool(tool_name: str) -> None:
+        if shutil.which("uv") is None:
+            raise CleanerError("uv not found on PATH")
+        result = subprocess.run(
+            ["uv", "tool", "uninstall", tool_name],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            raise CleanerError(
+                f"uv tool uninstall failed for '{tool_name}': {result.stderr.strip()}"
             )

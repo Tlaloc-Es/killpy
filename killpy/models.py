@@ -39,8 +39,8 @@ class Environment:
         Total size in bytes (recursive directory sum).
     managed_by:
         If not ``None``, the external tool that manages deletion.  Supported
-        values: ``"conda"`` and ``"pipx"``.  When ``None`` deletion is
-        performed via :func:`shutil.rmtree`.
+        values: ``"conda"``, ``"pipx"`` and ``"uv"`` (uv tool environments).
+        When ``None`` deletion is performed via :func:`shutil.rmtree`.
     """
 
     path: Path

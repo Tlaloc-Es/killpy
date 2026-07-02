@@ -7,6 +7,8 @@ import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from killpy.detectors.artifacts import ArtifactsDetector, _is_artifact_dir
 from killpy.detectors.cache import CacheDetector, _make_cache_env
 from killpy.detectors.conda import CondaDetector
@@ -15,7 +17,7 @@ from killpy.detectors.pipenv import PipenvDetector
 from killpy.detectors.pipx import PipxDetector
 from killpy.detectors.poetry import PoetryDetector
 from killpy.detectors.tox import ToxDetector
-from killpy.detectors.uv import UvDetector
+from killpy.detectors.uv import UvDetector, _uv_python_dir, _uv_tools_dir
 
 # ---------------------------------------------------------------------------
 # CondaDetector
@@ -390,39 +392,80 @@ class TestToxDetector:
 
 
 class TestUvDetector:
-    def test_can_handle_true(self) -> None:
+    def _patched(self, tools: Path, python: Path):
+        return (
+            patch("killpy.detectors.uv._uv_tools_dir", return_value=tools),
+            patch("killpy.detectors.uv._uv_python_dir", return_value=python),
+        )
+
+    def test_can_handle_true_when_uv_on_path(self) -> None:
         with patch("shutil.which", return_value="/usr/bin/uv"):
             assert UvDetector().can_handle() is True
 
-    def test_can_handle_false(self) -> None:
-        with patch("shutil.which", return_value=None):
+    def test_can_handle_true_when_tools_dir_exists(self, tmp_path: Path) -> None:
+        tools = tmp_path / "tools"
+        tools.mkdir()
+        p_tools, p_python = self._patched(tools, tmp_path / "python")
+        with patch("shutil.which", return_value=None), p_tools, p_python:
+            assert UvDetector().can_handle() is True
+
+    def test_can_handle_false(self, tmp_path: Path) -> None:
+        p_tools, p_python = self._patched(tmp_path / "tools", tmp_path / "python")
+        with patch("shutil.which", return_value=None), p_tools, p_python:
             assert UvDetector().can_handle() is False
 
-    def test_finds_uv_dir(self, tmp_path: Path) -> None:
-        (tmp_path / "project" / ".uv").mkdir(parents=True)
-        with patch("shutil.which", return_value="/usr/bin/uv"):
+    def test_detects_tool_envs_managed_by_uv(self, tmp_path: Path) -> None:
+        tools = tmp_path / "tools"
+        (tools / "httpie").mkdir(parents=True)
+        p_tools, p_python = self._patched(tools, tmp_path / "python")
+        with p_tools, p_python:
             envs = UvDetector().detect(tmp_path)
         assert len(envs) == 1
+        assert envs[0].name == "httpie"
         assert envs[0].type == "uv"
+        assert envs[0].managed_by == "uv"
 
-    def test_no_uv_in_empty_dir(self, tmp_path: Path) -> None:
-        with patch("shutil.which", return_value="/usr/bin/uv"):
-            envs = UvDetector().detect(tmp_path)
-        assert envs == []
-
-    def test_does_not_recurse_into_uv(self, tmp_path: Path) -> None:
-        outer = tmp_path / ".uv"
-        outer.mkdir()
-        (outer / ".uv").mkdir()
-        with patch("shutil.which", return_value="/usr/bin/uv"):
+    def test_detects_python_installs_unmanaged(self, tmp_path: Path) -> None:
+        python = tmp_path / "python"
+        (python / "cpython-3.12.1-linux-x86_64-gnu").mkdir(parents=True)
+        p_tools, p_python = self._patched(tmp_path / "tools", python)
+        with p_tools, p_python:
             envs = UvDetector().detect(tmp_path)
         assert len(envs) == 1
+        assert envs[0].name == "cpython-3.12.1-linux-x86_64-gnu"
+        assert envs[0].managed_by is None
 
-    def test_pruned_dirs_skipped(self, tmp_path: Path) -> None:
-        (tmp_path / "node_modules" / ".uv").mkdir(parents=True)
-        with patch("shutil.which", return_value="/usr/bin/uv"):
+    def test_returns_empty_when_dirs_missing(self, tmp_path: Path) -> None:
+        p_tools, p_python = self._patched(tmp_path / "tools", tmp_path / "python")
+        with p_tools, p_python:
             envs = UvDetector().detect(tmp_path)
         assert envs == []
+
+    def test_skips_plain_files(self, tmp_path: Path) -> None:
+        tools = tmp_path / "tools"
+        tools.mkdir()
+        (tools / ".lock").write_text("")
+        p_tools, p_python = self._patched(tools, tmp_path / "python")
+        with p_tools, p_python:
+            envs = UvDetector().detect(tmp_path)
+        assert envs == []
+
+    def test_tool_dir_env_var_override(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setenv("UV_TOOL_DIR", str(tmp_path / "custom-tools"))
+        monkeypatch.setenv("UV_PYTHON_INSTALL_DIR", str(tmp_path / "custom-python"))
+        assert _uv_tools_dir() == tmp_path / "custom-tools"
+        assert _uv_python_dir() == tmp_path / "custom-python"
+
+    def test_xdg_data_home_respected(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.delenv("UV_TOOL_DIR", raising=False)
+        monkeypatch.delenv("UV_PYTHON_INSTALL_DIR", raising=False)
+        monkeypatch.setenv("XDG_DATA_HOME", str(tmp_path))
+        assert _uv_tools_dir() == tmp_path / "uv" / "tools"
+        assert _uv_python_dir() == tmp_path / "uv" / "python"
 
 
 # ---------------------------------------------------------------------------

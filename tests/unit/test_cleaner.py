@@ -185,6 +185,45 @@ class TestCleanerPipx:
 
 
 # ---------------------------------------------------------------------------
+# uv tool environments
+# ---------------------------------------------------------------------------
+
+
+class TestCleanerUvTool:
+    def test_calls_uv_tool_uninstall(self) -> None:
+        env = _env(name="httpie", managed_by="uv")
+        with (
+            patch("shutil.which", return_value="/usr/bin/uv"),
+            patch("subprocess.run") as mock_run,
+        ):
+            mock_run.return_value = MagicMock(returncode=0)
+            cleaner = Cleaner()
+            freed = cleaner.delete(env)
+        assert freed == env.size_bytes
+        args = mock_run.call_args[0][0]
+        assert args[:3] == ["uv", "tool", "uninstall"]
+        assert "httpie" in args
+
+    def test_raises_when_uv_not_found(self) -> None:
+        env = _env(name="httpie", managed_by="uv")
+        with patch("shutil.which", return_value=None):
+            cleaner = Cleaner()
+            with pytest.raises(CleanerError, match="uv not found"):
+                cleaner.delete(env)
+
+    def test_raises_when_uv_fails(self) -> None:
+        env = _env(name="httpie", managed_by="uv")
+        with (
+            patch("shutil.which", return_value="/usr/bin/uv"),
+            patch("subprocess.run") as mock_run,
+        ):
+            mock_run.return_value = MagicMock(returncode=1, stderr="error")
+            cleaner = Cleaner()
+            with pytest.raises(CleanerError, match="uv tool uninstall failed"):
+                cleaner.delete(env)
+
+
+# ---------------------------------------------------------------------------
 # delete_many error handling
 # ---------------------------------------------------------------------------
 
