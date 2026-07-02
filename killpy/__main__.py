@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 
 import click
@@ -6,7 +7,7 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.prompt import Confirm
 
-from killpy.cleaner import Cleaner
+from killpy.cleaner import Cleaner, CleanerError
 from killpy.cli import TableApp
 from killpy.commands.clean import clean
 from killpy.commands.delete import delete_cmd
@@ -62,17 +63,19 @@ def _run_delete_all(path: Path, excluded: set[str], yes: bool) -> None:
 
     deleted = 0
     freed = 0
+    errors = 0
     for env in envs:
-        size = env.size_bytes
-        if cleaner.delete(env):
-            freed += size
+        try:
+            freed += cleaner.delete(env)
             deleted += 1
-        else:
-            console.print(f"[red]Failed to delete:[/red] {env.path}")
+        except CleanerError as exc:
+            console.print(f"  [red]✗ Failed to delete:[/red] {env.path}: {exc}")
+            errors += 1
 
     console.print(
         f"\n[bold green]Done.[/bold green] Deleted {deleted}/{len(envs)} environment(s), "  # noqa: E501
         f"freed [bold]{format_size(freed)}[/bold]."
+        + (f" [red]{errors} error(s).[/red]" if errors else "")
     )
 
     # Best-effort: update the history record created above with freed bytes.
@@ -80,6 +83,9 @@ def _run_delete_all(path: Path, excluded: set[str], yes: bool) -> None:
         tracker.record_deletion(freed)
     except Exception:  # noqa: BLE001
         pass
+
+    if errors:
+        sys.exit(1)
 
 
 @click.group(invoke_without_command=True)
