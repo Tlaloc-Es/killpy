@@ -14,6 +14,10 @@ from killpy.models import Environment
 logger = logging.getLogger(__name__)
 
 _PRUNED: frozenset[str] = frozenset({".git", ".hg", ".svn", "node_modules"})
+# Environment internals are not build artifacts: every installed package has
+# a ``site-packages/*.dist-info`` directory whose deletion corrupts the env.
+# Environments are VenvDetector territory.
+_ENV_DIRS: frozenset[str] = frozenset({".venv", "site-packages"})
 _EXACT_NAMES: frozenset[str] = frozenset({"dist", "build"})
 _SUFFIXES: tuple[str, ...] = (".egg-info", ".dist-info")
 
@@ -28,7 +32,10 @@ class ArtifactsDetector(AbstractDetector):
     """Detects Python build artifact directories.
 
     Finds ``dist/``, ``build/``, ``*.egg-info/``, and ``*.dist-info/``
-    directories under the scan root.
+    directories under the scan root.  Virtual environments (``.venv``,
+    any directory containing ``pyvenv.cfg``) and ``site-packages`` trees
+    are skipped: their ``*.dist-info`` entries are package metadata, not
+    build output.
     """
 
     name = "artifacts"
@@ -38,10 +45,14 @@ class ArtifactsDetector(AbstractDetector):
 
     def detect(self, path: Path) -> list[Environment]:
         envs: list[Environment] = []
-        for current_root, directories, _ in os.walk(path, topdown=True):
+        for current_root, directories, files in os.walk(path, topdown=True):
+            if "pyvenv.cfg" in files:
+                # Inside a virtual environment (whatever its name) — skip it.
+                directories[:] = []
+                continue
             pruned = set()
             for d in directories:
-                if d in _PRUNED:
+                if d in _PRUNED or d in _ENV_DIRS:
                     pruned.add(d)
                     continue
                 if _is_artifact_dir(d):

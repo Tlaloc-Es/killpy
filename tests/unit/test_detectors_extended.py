@@ -474,6 +474,41 @@ class TestArtifactsDetector:
         envs = ArtifactsDetector().detect(tmp_path)
         assert envs == []
 
+    def test_ignores_dist_info_inside_dot_venv(self, tmp_path: Path) -> None:
+        # Regression: site-packages *.dist-info are package metadata, not
+        # build artifacts — deleting them corrupts the environment.
+        site_packages = tmp_path / ".venv" / "lib" / "python3.12" / "site-packages"
+        site_packages.mkdir(parents=True)
+        (tmp_path / ".venv" / "pyvenv.cfg").write_text("home = /usr/bin\n")
+        (site_packages / "mypkg-1.0.dist-info").mkdir()
+        (tmp_path / "dist").mkdir()
+
+        envs = ArtifactsDetector().detect(tmp_path)
+
+        assert [e.path.name for e in envs] == ["dist"]
+
+    def test_ignores_env_with_custom_name_via_pyvenv_cfg(self, tmp_path: Path) -> None:
+        env_dir = tmp_path / "my-custom-env"
+        site_packages = env_dir / "lib" / "python3.12" / "site-packages"
+        site_packages.mkdir(parents=True)
+        (env_dir / "pyvenv.cfg").write_text("home = /usr/bin\n")
+        (site_packages / "mypkg-1.0.dist-info").mkdir()
+        (env_dir / "lib" / "build").mkdir()
+
+        envs = ArtifactsDetector().detect(tmp_path)
+
+        assert envs == []
+
+    def test_ignores_bare_site_packages(self, tmp_path: Path) -> None:
+        # conda envs have site-packages but no pyvenv.cfg
+        site_packages = tmp_path / "envs" / "ml" / "lib" / "site-packages"
+        site_packages.mkdir(parents=True)
+        (site_packages / "mypkg-1.0.dist-info").mkdir()
+
+        envs = ArtifactsDetector().detect(tmp_path)
+
+        assert envs == []
+
     def test_is_artifact_dir_helpers(self) -> None:
         assert _is_artifact_dir("dist") is True
         assert _is_artifact_dir("build") is True
