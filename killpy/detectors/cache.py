@@ -5,8 +5,8 @@ Covers:
 * ``.mypy_cache``
 * ``.pytest_cache``
 * ``.ruff_cache``
-* Global pip cache  (``~/.cache/pip``)
-* Global uv cache   (``~/.cache/uv``)
+* Global pip cache  (``~/.cache/pip``) — only when inside the scanned path
+* Global uv cache   (``~/.cache/uv``) — only when inside the scanned path
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ class CacheDetector(AbstractDetector):
     def detect(self, path: Path) -> list[Environment]:
         envs: list[Environment] = []
         envs.extend(self._scan_local(path))
-        envs.extend(self._scan_global())
+        envs.extend(self._scan_global(path))
         return envs
 
     # ------------------------------------------------------------------ #
@@ -70,19 +70,33 @@ class CacheDetector(AbstractDetector):
             directories[:] = [d for d in directories if d not in prune]
         return results
 
-    def _scan_global(self) -> list[Environment]:
-        """Return global pip and uv cache directories if they exist."""
+    def _scan_global(self, root: Path) -> list[Environment]:
+        """Return global pip/uv cache directories that live under *root*.
+
+        A scan scoped to a project directory (e.g. the pre-commit hooks or
+        ``killpy delete --type cache --path <repo>``) must never surface —
+        and therefore never delete — caches outside that directory.  The
+        global caches are still reported when the scan root contains them
+        (e.g. ``killpy --path ~``).
+        """
+        try:
+            scan_root = root.resolve()
+        except OSError:
+            scan_root = root
         results: list[Environment] = []
         candidates = [
             (Path.home() / ".cache" / "pip", "pip-cache"),
             (Path.home() / ".cache" / "uv", "uv-cache"),
         ]
         for cache_path, tag in candidates:
-            if cache_path.exists():
-                try:
-                    results.append(_make_cache_env(cache_path, tag))
-                except (FileNotFoundError, OSError) as exc:
-                    logger.debug("Skipping global cache %s: %s", cache_path, exc)
+            if not cache_path.exists():
+                continue
+            try:
+                if not cache_path.resolve().is_relative_to(scan_root):
+                    continue
+                results.append(_make_cache_env(cache_path, tag))
+            except (FileNotFoundError, OSError) as exc:
+                logger.debug("Skipping global cache %s: %s", cache_path, exc)
         return results
 
 

@@ -577,13 +577,45 @@ class TestCacheDetectorExtended:
             envs = CacheDetector()._scan_local(tmp_path)
         assert envs == []
 
-    def test_scan_global_finds_pip_cache(self, tmp_path: Path) -> None:
-        """_scan_global returns pip-cache env when the dir exists."""
+    def test_scan_global_finds_pip_cache_when_under_scan_root(
+        self, tmp_path: Path
+    ) -> None:
+        """_scan_global returns pip-cache when the scan root contains it."""
         pip_dir = tmp_path / ".cache" / "pip"
         pip_dir.mkdir(parents=True)
         with patch.object(Path, "home", return_value=tmp_path):
-            envs = CacheDetector()._scan_global()
+            envs = CacheDetector()._scan_global(tmp_path)
         assert any(e.type == "pip-cache" for e in envs)
+
+    def test_scan_global_skips_caches_outside_scan_root(self, tmp_path: Path) -> None:
+        """Scanning a project dir must not surface the user's global caches.
+
+        Regression test: the global pip/uv caches were returned regardless
+        of --path, so `killpy delete --type cache` scoped to a repository
+        (e.g. the killpy-clean-caches pre-commit hook) silently deleted
+        ~/.cache/pip and ~/.cache/uv on every run.
+        """
+        home = tmp_path / "home"
+        (home / ".cache" / "pip").mkdir(parents=True)
+        (home / ".cache" / "uv").mkdir(parents=True)
+        project = tmp_path / "project"
+        project.mkdir()
+        with patch.object(Path, "home", return_value=home):
+            envs = CacheDetector()._scan_global(project)
+        assert envs == []
+
+    def test_detect_scopes_global_caches_to_path(self, tmp_path: Path) -> None:
+        home = tmp_path / "home"
+        (home / ".cache" / "pip").mkdir(parents=True)
+        project = tmp_path / "project"
+        (project / "__pycache__").mkdir(parents=True)
+
+        with patch.object(Path, "home", return_value=home):
+            project_envs = CacheDetector().detect(project)
+            home_envs = CacheDetector().detect(home)
+
+        assert {e.type for e in project_envs} == {"__pycache__"}
+        assert any(e.type == "pip-cache" for e in home_envs)
 
 
 # ---------------------------------------------------------------------------

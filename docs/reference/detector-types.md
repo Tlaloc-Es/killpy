@@ -16,7 +16,7 @@ The scanner registers detectors in `killpy/detectors/__init__.py`.
 
 ## Additional scanner-only categories
 
-- `cache`: local and global cache directories such as `__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, and selected global tool caches
+- `cache`: local cache directories such as `__pycache__`, `.pytest_cache`, `.mypy_cache`, `.ruff_cache`, plus the global pip/uv caches. The global caches are only included when they live inside the scanned path (e.g. `--path ~`) — a scan scoped to a repository never surfaces or deletes them
 - `artifacts`: build output directories such as `dist`, `build`, `.egg-info`, and `.dist-info`
 
 ## Notes on presentation
