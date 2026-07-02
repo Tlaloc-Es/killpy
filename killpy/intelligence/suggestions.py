@@ -9,7 +9,6 @@ from killpy.models import ScoredEnvironment, Suggestion
 
 # Age thresholds in days.
 _HIGH_AGE_ORPHAN_THRESHOLD = 180  # orphan + age >= this → HIGH
-_HIGH_AGE_NO_PROJECT_THRESHOLD = 365  # no project files + age >= this → HIGH
 _MEDIUM_AGE_THRESHOLD = 120  # age >= this → MEDIUM
 _LOW_AGE_THRESHOLD = 120  # age < this → LOW
 
@@ -73,7 +72,6 @@ class SuggestionEngine:
         reasons: list[str],
     ) -> tuple[Literal["HIGH", "MEDIUM", "LOW"], str]:
         is_orphan = scored.is_orphan
-        has_project_files = scored.has_project_files
         is_active_git = (
             scored.git_info is not None
             and scored.git_info.is_git_repo
@@ -82,12 +80,6 @@ class SuggestionEngine:
 
         # ── Rule 1: HIGH — orphan and stale ────────────────────────────────────
         if is_orphan and age_days >= _HIGH_AGE_ORPHAN_THRESHOLD:
-            reasons.append("Orphan — no project files found nearby")
-            reasons.append(f"Not used in {age_days} days")
-            return "HIGH", _ACTION_HIGH
-
-        # ── Rule 1b: HIGH — no project files and very old ──────────────────────
-        if not has_project_files and age_days >= _HIGH_AGE_NO_PROJECT_THRESHOLD:
             reasons.append("Orphan — no project files found nearby")
             reasons.append(f"Not used in {age_days} days")
             return "HIGH", _ACTION_HIGH

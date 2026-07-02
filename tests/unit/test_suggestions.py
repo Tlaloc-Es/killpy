@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from killpy.intelligence.suggestions import (
-    _HIGH_AGE_NO_PROJECT_THRESHOLD,
     _HIGH_AGE_ORPHAN_THRESHOLD,
     _LOW_AGE_THRESHOLD,
     _MEDIUM_AGE_THRESHOLD,
@@ -85,16 +84,23 @@ class TestHighCategory:
             )
             assert suggestion.category == "HIGH", f"size={size}"
 
-    def test_no_project_files_very_old_is_high(self) -> None:
+    def test_very_old_env_with_project_files_is_not_high(self) -> None:
+        """HIGH requires orphan status; age alone never reaches HIGH.
+
+        (A former "no project files and age >= 365" rule was removed: it
+        was unreachable because has_project_files is always the negation
+        of is_orphan, so rule 1 fired first for any qualifying env.)
+        """
         engine = SuggestionEngine()
         suggestion = engine.classify(
             _scored(
-                is_orphan=True,
-                days_old=_HIGH_AGE_NO_PROJECT_THRESHOLD,
-                size=_SMALL,
+                is_orphan=False,
+                days_old=400,
+                size=_LARGE,
+                git_info=_INACTIVE_GIT,
             )
         )
-        assert suggestion.category == "HIGH"
+        assert suggestion.category == "MEDIUM"
 
     def test_orphan_below_age_threshold_not_high(self) -> None:
         engine = SuggestionEngine()

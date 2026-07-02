@@ -94,7 +94,6 @@ The score determines *sort order* within each category. It does **not** determin
 `SuggestionEngine.classify()` applies rules in strict priority order:
 
 1. **HIGH** — `is_orphan == True` and `age ≥ 180 days`
-1. **HIGH** — `has_project_files == False` and `age ≥ 365 days`
 1. **LOW** — `git.is_active == True` or `age < 120 days`
 1. **MEDIUM** — `age ≥ 120 days`
 1. **LOW** — fallback
