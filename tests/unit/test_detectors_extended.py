@@ -566,6 +566,39 @@ class TestCacheDetectorExtended:
         envs = CacheDetector()._scan_local(tmp_path)
         assert envs == []
 
+    def test_scan_local_skips_caches_inside_dot_venv(self, tmp_path: Path) -> None:
+        # Regression: caches inside a venv are part of the venv's size
+        # (VenvDetector reports the whole tree) — listing them separately
+        # double-counted their bytes in stats/list totals.
+        site_packages = tmp_path / ".venv" / "lib" / "python3.12" / "site-packages"
+        site_packages.mkdir(parents=True)
+        (tmp_path / ".venv" / "pyvenv.cfg").write_text("home = /usr/bin\n")
+        (site_packages / "mypkg" / "__pycache__").mkdir(parents=True)
+        (tmp_path / "src" / "__pycache__").mkdir(parents=True)
+
+        envs = CacheDetector()._scan_local(tmp_path)
+
+        assert [e.path for e in envs] == [tmp_path / "src" / "__pycache__"]
+
+    def test_scan_local_skips_env_with_custom_name(self, tmp_path: Path) -> None:
+        env_dir = tmp_path / "my-custom-env"
+        env_dir.mkdir()
+        (env_dir / "pyvenv.cfg").write_text("home = /usr/bin\n")
+        (env_dir / "lib" / "__pycache__").mkdir(parents=True)
+
+        envs = CacheDetector()._scan_local(tmp_path)
+
+        assert envs == []
+
+    def test_scan_local_skips_bare_site_packages(self, tmp_path: Path) -> None:
+        # conda envs have site-packages but no pyvenv.cfg
+        site_packages = tmp_path / "envs" / "ml" / "lib" / "site-packages"
+        (site_packages / "__pycache__").mkdir(parents=True)
+
+        envs = CacheDetector()._scan_local(tmp_path)
+
+        assert envs == []
+
     def test_scan_local_handles_os_error_from_make_cache_env(
         self, tmp_path: Path
     ) -> None:

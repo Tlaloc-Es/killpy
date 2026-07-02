@@ -33,6 +33,11 @@ _LOCAL_CACHE_DIRS: tuple[str, ...] = (
 # Directories to prune from the walk so we don't descend into them.
 _PRUNED: frozenset[str] = frozenset({".git", ".hg", ".svn", "node_modules"})
 
+# Caches inside an environment belong to the environment: VenvDetector
+# already reports the whole tree, so listing them separately double-counts
+# their size in stats/list totals.
+_ENV_DIRS: frozenset[str] = frozenset({".venv", "site-packages"})
+
 
 class CacheDetector(AbstractDetector):
     """Detects local and global Python cache directories."""
@@ -51,12 +56,20 @@ class CacheDetector(AbstractDetector):
     # ------------------------------------------------------------------ #
 
     def _scan_local(self, root: Path) -> list[Environment]:
-        """Walk *root* and collect all known local cache directories."""
+        """Walk *root* and collect all known local cache directories.
+
+        Virtual environments (``.venv``, any directory containing
+        ``pyvenv.cfg``) and ``site-packages`` trees are skipped.
+        """
         results: list[Environment] = []
-        for current_root, directories, _ in os.walk(root, topdown=True):
+        for current_root, directories, files in os.walk(root, topdown=True):
+            if "pyvenv.cfg" in files:
+                # Inside a virtual environment (whatever its name) — skip it.
+                directories[:] = []
+                continue
             prune = set()
             for d in directories:
-                if d in _PRUNED:
+                if d in _PRUNED or d in _ENV_DIRS:
                     prune.add(d)
                     continue
                 if d in _LOCAL_CACHE_DIRS:
