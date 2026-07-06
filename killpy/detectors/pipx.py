@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import platform
 import shutil
 import subprocess
@@ -18,16 +19,33 @@ logger = logging.getLogger(__name__)
 
 
 def _pipx_venvs_root() -> Path:
-    """Return the root directory where pipx stores its package venvs."""
-    if platform.system() == "Windows":  # pragma: no cover
+    """Return the root directory where pipx stores its package venvs.
+
+    Honours ``PIPX_HOME``, the legacy ``~/.local/pipx`` home (pipx keeps
+    using it when it already exists) and ``XDG_DATA_HOME``; on macOS the
+    platformdirs-based location is checked as well.
+    """
+    override = os.environ.get("PIPX_HOME")
+    if override:
+        return Path(override).expanduser() / "venvs"
+    legacy = Path.home() / ".local" / "pipx" / "venvs"
+    if legacy.exists():
+        return legacy
+    system = platform.system()
+    if system == "Windows":  # pragma: no cover
         local_app = (
             Path.home() / "AppData" / "Local" / "pipx" / "venvs"
         )  # pragma: no cover
         if local_app.exists():  # pragma: no cover
             return local_app  # pragma: no cover
-    # XDG_DATA_HOME / pipx / venvs (Linux/macOS default)
-    xdg = Path.home() / ".local" / "share" / "pipx" / "venvs"
-    return xdg
+        return Path.home() / "pipx" / "venvs"  # pragma: no cover
+    if system == "Darwin":
+        mac_root = Path.home() / "Library" / "Application Support" / "pipx" / "venvs"
+        if mac_root.exists():
+            return mac_root
+    xdg = os.environ.get("XDG_DATA_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".local" / "share"
+    return base / "pipx" / "venvs"
 
 
 def _resolve_pipx_candidate(

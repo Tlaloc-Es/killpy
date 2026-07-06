@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import platform
 import shutil
 from datetime import datetime, timezone
@@ -16,15 +17,22 @@ logger = logging.getLogger(__name__)
 
 
 def _hatch_envs_root() -> Path:
-    """Return the default hatch environments directory for the current OS."""
-    if platform.system() == "Windows":  # pragma: no cover
-        local_app = (
-            Path.home() / "AppData" / "Local" / "hatch" / "env"
-        )  # pragma: no cover
-        if local_app.exists():  # pragma: no cover
-            return local_app  # pragma: no cover
-    # Linux / macOS
-    return Path.home() / ".local" / "share" / "hatch" / "env"
+    """Return the hatch environments directory for the current OS.
+
+    Honours ``HATCH_DATA_DIR`` and ``XDG_DATA_HOME``; uses the
+    platform-specific data location on macOS and Windows.
+    """
+    override = os.environ.get("HATCH_DATA_DIR")
+    if override:
+        return Path(override).expanduser() / "env"
+    system = platform.system()
+    if system == "Windows":  # pragma: no cover
+        return Path.home() / "AppData" / "Local" / "hatch" / "env"  # pragma: no cover
+    if system == "Darwin":
+        return Path.home() / "Library" / "Application Support" / "hatch" / "env"
+    xdg = os.environ.get("XDG_DATA_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".local" / "share"
+    return base / "hatch" / "env"
 
 
 class HatchDetector(AbstractDetector):

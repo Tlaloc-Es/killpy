@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import platform
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,11 +16,24 @@ logger = logging.getLogger(__name__)
 
 
 def _poetry_venvs_dir() -> Path:
-    if platform.system() == "Windows":  # pragma: no cover
+    """Return Poetry's virtualenvs directory for the current platform.
+
+    Honours ``POETRY_CACHE_DIR`` and ``XDG_CACHE_HOME``; uses the
+    platform-specific cache location on macOS and Windows.
+    """
+    override = os.environ.get("POETRY_CACHE_DIR")
+    if override:
+        return Path(override).expanduser() / "virtualenvs"
+    system = platform.system()
+    if system == "Windows":  # pragma: no cover
         return (
-            Path.home() / "AppData" / "Local" / "pypoetry" / "virtualenvs"
+            Path.home() / "AppData" / "Local" / "pypoetry" / "Cache" / "virtualenvs"
         )  # pragma: no cover
-    return Path.home() / ".cache" / "pypoetry" / "virtualenvs"
+    if system == "Darwin":
+        return Path.home() / "Library" / "Caches" / "pypoetry" / "virtualenvs"
+    xdg = os.environ.get("XDG_CACHE_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".cache"
+    return base / "pypoetry" / "virtualenvs"
 
 
 class PoetryDetector(AbstractDetector):

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import platform
 import shutil
 from datetime import datetime, timezone
@@ -16,7 +17,10 @@ logger = logging.getLogger(__name__)
 
 
 def _pipenv_venvs_root() -> Path:
-    """Return the default pipenv virtualenvs directory for the current OS."""
+    """Return the pipenv virtualenvs directory, honouring ``WORKON_HOME``."""
+    override = os.environ.get("WORKON_HOME")
+    if override:
+        return Path(override).expanduser()
     if platform.system() == "Windows":  # pragma: no cover
         return Path.home() / ".virtualenvs"  # pragma: no cover
     return Path.home() / ".local" / "share" / "virtualenvs"

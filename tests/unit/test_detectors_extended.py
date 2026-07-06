@@ -10,12 +10,18 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from killpy.detectors.artifacts import ArtifactsDetector, _is_artifact_dir
-from killpy.detectors.cache import CacheDetector, _make_cache_env
+from killpy.detectors.cache import (
+    CacheDetector,
+    _make_cache_env,
+    _pip_cache_dir,
+    _uv_cache_dir,
+)
 from killpy.detectors.conda import CondaDetector
-from killpy.detectors.hatch import HatchDetector
-from killpy.detectors.pipenv import PipenvDetector
-from killpy.detectors.pipx import PipxDetector
-from killpy.detectors.poetry import PoetryDetector
+from killpy.detectors.hatch import HatchDetector, _hatch_envs_root
+from killpy.detectors.pipenv import PipenvDetector, _pipenv_venvs_root
+from killpy.detectors.pipx import PipxDetector, _pipx_venvs_root
+from killpy.detectors.poetry import PoetryDetector, _poetry_venvs_dir
+from killpy.detectors.pyenv import _pyenv_root
 from killpy.detectors.tox import ToxDetector
 from killpy.detectors.uv import UvDetector, _uv_python_dir, _uv_tools_dir
 
@@ -653,13 +659,26 @@ class TestCacheDetectorExtended:
             envs = CacheDetector()._scan_local(tmp_path)
         assert envs == []
 
+    def _global_cache_patches(self, home: Path):
+        return (
+            patch(
+                "killpy.detectors.cache._pip_cache_dir",
+                return_value=home / ".cache" / "pip",
+            ),
+            patch(
+                "killpy.detectors.cache._uv_cache_dir",
+                return_value=home / ".cache" / "uv",
+            ),
+        )
+
     def test_scan_global_finds_pip_cache_when_under_scan_root(
         self, tmp_path: Path
     ) -> None:
         """_scan_global returns pip-cache when the scan root contains it."""
         pip_dir = tmp_path / ".cache" / "pip"
         pip_dir.mkdir(parents=True)
-        with patch.object(Path, "home", return_value=tmp_path):
+        p_pip, p_uv = self._global_cache_patches(tmp_path)
+        with p_pip, p_uv:
             envs = CacheDetector()._scan_global(tmp_path)
         assert any(e.type == "pip-cache" for e in envs)
 
@@ -676,7 +695,8 @@ class TestCacheDetectorExtended:
         (home / ".cache" / "uv").mkdir(parents=True)
         project = tmp_path / "project"
         project.mkdir()
-        with patch.object(Path, "home", return_value=home):
+        p_pip, p_uv = self._global_cache_patches(home)
+        with p_pip, p_uv:
             envs = CacheDetector()._scan_global(project)
         assert envs == []
 
@@ -686,12 +706,108 @@ class TestCacheDetectorExtended:
         project = tmp_path / "project"
         (project / "__pycache__").mkdir(parents=True)
 
-        with patch.object(Path, "home", return_value=home):
+        p_pip, p_uv = self._global_cache_patches(home)
+        with p_pip, p_uv:
             project_envs = CacheDetector().detect(project)
             home_envs = CacheDetector().detect(home)
 
         assert {e.type for e in project_envs} == {"__pycache__"}
         assert any(e.type == "pip-cache" for e in home_envs)
+
+
+# ---------------------------------------------------------------------------
+# Detector location helpers — env overrides and platform defaults
+# ---------------------------------------------------------------------------
+
+
+class TestDetectorLocationOverrides:
+    def test_poetry_cache_dir_env_override(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setenv("POETRY_CACHE_DIR", str(tmp_path / "poetry-cache"))
+        assert _poetry_venvs_dir() == tmp_path / "poetry-cache" / "virtualenvs"
+
+    def test_poetry_macos_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("POETRY_CACHE_DIR", raising=False)
+        with patch("killpy.detectors.poetry.platform.system", return_value="Darwin"):
+            assert (
+                _poetry_venvs_dir()
+                == Path.home() / "Library" / "Caches" / "pypoetry" / "virtualenvs"
+            )
+
+    def test_poetry_xdg_cache_home(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.delenv("POETRY_CACHE_DIR", raising=False)
+        monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+        with patch("killpy.detectors.poetry.platform.system", return_value="Linux"):
+            assert _poetry_venvs_dir() == tmp_path / "pypoetry" / "virtualenvs"
+
+    def test_pip_cache_env_override(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setenv("PIP_CACHE_DIR", str(tmp_path / "pipcache"))
+        assert _pip_cache_dir() == tmp_path / "pipcache"
+
+    def test_pip_cache_macos_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("PIP_CACHE_DIR", raising=False)
+        with patch("killpy.detectors.cache.platform.system", return_value="Darwin"):
+            assert _pip_cache_dir() == Path.home() / "Library" / "Caches" / "pip"
+
+    def test_uv_cache_env_override(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setenv("UV_CACHE_DIR", str(tmp_path / "uvcache"))
+        assert _uv_cache_dir() == tmp_path / "uvcache"
+
+    def test_uv_cache_xdg_cache_home(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.delenv("UV_CACHE_DIR", raising=False)
+        monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path))
+        with patch("killpy.detectors.cache.platform.system", return_value="Linux"):
+            assert _uv_cache_dir() == tmp_path / "uv"
+
+    def test_pyenv_root_env_override(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setenv("PYENV_ROOT", str(tmp_path / "pyenv"))
+        assert _pyenv_root() == tmp_path / "pyenv"
+
+    def test_pipx_home_env_override(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setenv("PIPX_HOME", str(tmp_path / "pipx-home"))
+        assert _pipx_venvs_root() == tmp_path / "pipx-home" / "venvs"
+
+    def test_pipx_legacy_home_preferred_when_exists(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.delenv("PIPX_HOME", raising=False)
+        legacy = tmp_path / ".local" / "pipx" / "venvs"
+        legacy.mkdir(parents=True)
+        with patch.object(Path, "home", return_value=tmp_path):
+            assert _pipx_venvs_root() == legacy
+
+    def test_pipenv_workon_home_env_override(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setenv("WORKON_HOME", str(tmp_path / "workon"))
+        assert _pipenv_venvs_root() == tmp_path / "workon"
+
+    def test_hatch_data_dir_env_override(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.setenv("HATCH_DATA_DIR", str(tmp_path / "hatch-data"))
+        assert _hatch_envs_root() == tmp_path / "hatch-data" / "env"
+
+    def test_hatch_macos_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("HATCH_DATA_DIR", raising=False)
+        with patch("killpy.detectors.hatch.platform.system", return_value="Darwin"):
+            assert (
+                _hatch_envs_root()
+                == Path.home() / "Library" / "Application Support" / "hatch" / "env"
+            )
 
 
 # ---------------------------------------------------------------------------

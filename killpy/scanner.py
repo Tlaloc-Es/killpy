@@ -22,6 +22,7 @@ from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 
 from killpy.detectors import ALL_DETECTORS, AbstractDetector
+from killpy.detectors.pyenv import _pyenv_root
 from killpy.models import Environment
 
 logger = logging.getLogger(__name__)
@@ -189,7 +190,7 @@ class Scanner:
             pass
 
         if env.type == "pyenv":
-            global_version_file = Path.home() / ".pyenv" / "version"
+            global_version_file = _pyenv_root() / "version"
             try:
                 global_version = global_version_file.read_text().strip()
                 if global_version and (

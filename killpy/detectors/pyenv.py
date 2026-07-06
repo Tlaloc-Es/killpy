@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import platform
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,14 +15,22 @@ from killpy.models import Environment
 logger = logging.getLogger(__name__)
 
 
+def _pyenv_root() -> Path:
+    """Return the pyenv root directory, honouring ``PYENV_ROOT``."""
+    override = os.environ.get("PYENV_ROOT")
+    if override:
+        return Path(override).expanduser()
+    return Path.home() / ".pyenv"
+
+
 def _pyenv_versions_root() -> Path:
     """Return the pyenv versions directory for the current platform."""
-    home = Path.home()
+    root = _pyenv_root()
     if platform.system() == "Windows":  # pragma: no cover
-        win_root = home / ".pyenv" / "pyenv-win" / "versions"  # pragma: no cover
+        win_root = root / "pyenv-win" / "versions"  # pragma: no cover
         if win_root.exists():  # pragma: no cover
             return win_root  # pragma: no cover
-    return home / ".pyenv" / "versions"
+    return root / "versions"
 
 
 class PyenvDetector(AbstractDetector):

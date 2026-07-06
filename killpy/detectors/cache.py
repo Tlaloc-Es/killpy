@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import logging
 import os
+import platform
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -37,6 +38,33 @@ _PRUNED: frozenset[str] = frozenset({".git", ".hg", ".svn", "node_modules"})
 # already reports the whole tree, so listing them separately double-counts
 # their size in stats/list totals.
 _ENV_DIRS: frozenset[str] = frozenset({".venv", "site-packages"})
+
+
+def _pip_cache_dir() -> Path:
+    """Return pip's cache directory, honouring env vars and the platform."""
+    override = os.environ.get("PIP_CACHE_DIR")
+    if override:
+        return Path(override).expanduser()
+    system = platform.system()
+    if system == "Windows":  # pragma: no cover
+        return Path.home() / "AppData" / "Local" / "pip" / "cache"  # pragma: no cover
+    if system == "Darwin":
+        return Path.home() / "Library" / "Caches" / "pip"
+    xdg = os.environ.get("XDG_CACHE_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".cache"
+    return base / "pip"
+
+
+def _uv_cache_dir() -> Path:
+    """Return uv's cache directory (uv uses XDG-style paths on all Unixes)."""
+    override = os.environ.get("UV_CACHE_DIR")
+    if override:
+        return Path(override).expanduser()
+    if platform.system() == "Windows":  # pragma: no cover
+        return Path.home() / "AppData" / "Local" / "uv" / "cache"  # pragma: no cover
+    xdg = os.environ.get("XDG_CACHE_HOME")
+    base = Path(xdg) if xdg else Path.home() / ".cache"
+    return base / "uv"
 
 
 class CacheDetector(AbstractDetector):
@@ -98,8 +126,8 @@ class CacheDetector(AbstractDetector):
             scan_root = root
         results: list[Environment] = []
         candidates = [
-            (Path.home() / ".cache" / "pip", "pip-cache"),
-            (Path.home() / ".cache" / "uv", "uv-cache"),
+            (_pip_cache_dir(), "pip-cache"),
+            (_uv_cache_dir(), "uv-cache"),
         ]
         for cache_path, tag in candidates:
             if not cache_path.exists():
