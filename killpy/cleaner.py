@@ -61,7 +61,9 @@ class Cleaner:
         -------
         int
             Number of bytes freed (or that *would have been* freed in dry-run
-            mode).
+            mode).  ``0`` when the path was already gone — e.g. it was
+            removed together with a previously deleted parent environment —
+            so callers don't over-report freed space.
 
         Raises
         ------
@@ -79,8 +81,8 @@ class Cleaner:
                 self._remove_pipx(env.name)
             elif env.managed_by == "uv":
                 self._remove_uv_tool(env.name)
-            else:
-                self._remove_filesystem(env.path)
+            elif not self._remove_filesystem(env.path):
+                return 0
         except CleanerError:
             raise
         except Exception as exc:  # noqa: BLE001
@@ -128,11 +130,13 @@ class Cleaner:
     # ------------------------------------------------------------------ #
 
     @staticmethod
-    def _remove_filesystem(path: Path) -> None:
+    def _remove_filesystem(path: Path) -> bool:
+        """Remove *path* recursively; return False when it no longer exists."""
         if not path.exists():
             logger.warning("Path no longer exists: %s", path)
-            return
+            return False
         shutil.rmtree(path)
+        return True
 
     @staticmethod
     def _remove_conda(env_name: str) -> None:

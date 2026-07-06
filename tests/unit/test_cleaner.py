@@ -74,12 +74,15 @@ class TestCleanerFilesystem:
         assert freed == 100
         assert not env_path.exists()
 
-    def test_missing_path_does_not_raise(self, tmp_path: Path) -> None:
+    def test_missing_path_does_not_raise_and_frees_nothing(
+        self, tmp_path: Path
+    ) -> None:
+        # A path that is already gone (e.g. deleted with its parent env)
+        # must not raise, and must not be counted as freed bytes.
         env = _env(path=tmp_path / "nonexistent", size=50)
         cleaner = Cleaner()
-        # Should log a warning and return the size without raising
         freed = cleaner.delete(env)
-        assert freed == 50
+        assert freed == 0
 
     def test_delete_many_returns_total_freed(self, tmp_path: Path) -> None:
         dirs = []

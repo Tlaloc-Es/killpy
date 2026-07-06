@@ -235,3 +235,29 @@ class TestScannerAsync:
 
         results = asyncio.run(_collect())
         assert len(results) == 1
+
+
+class TestMarkSystemCriticalPyenv:
+    def _scan_pyenv_env(self, tmp_path: Path, version_dir_name: str) -> Environment:
+        """Run a scan with PYENV_ROOT pointing at a fake root."""
+        pyenv_root = tmp_path / "pyenv"
+        pyenv_root.mkdir()
+        (pyenv_root / "version").write_text("3.12.1\n")
+        env_path = tmp_path / "versions" / version_dir_name
+        env_path.mkdir(parents=True)
+        env = _make_env(env_path, "pyenv")
+
+        scanner = Scanner(detectors=[_stub_detector("pyenv", [env])])
+        with patch.dict("os.environ", {"PYENV_ROOT": str(pyenv_root)}):
+            results = scanner.scan(tmp_path)
+        assert len(results) == 1
+        return results[0]
+
+    def test_global_version_is_marked_critical(self, tmp_path: Path) -> None:
+        result = self._scan_pyenv_env(tmp_path, "3.12.1")
+        assert result.is_system_critical is True
+
+    def test_similarly_named_version_is_not_critical(self, tmp_path: Path) -> None:
+        """Regression: endswith() also matched e.g. "my-3.12.1"."""
+        result = self._scan_pyenv_env(tmp_path, "my-3.12.1")
+        assert result.is_system_critical is False

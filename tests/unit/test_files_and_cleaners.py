@@ -133,3 +133,10 @@ class TestCleanCommand:
         with runner.isolated_filesystem():
             result = runner.invoke(cli, ["clean"])
         assert result.exit_code == 0
+
+    def test_clean_rejects_nonexistent_path(self, tmp_path: Path) -> None:
+        """A typo'd path must be a usage error, not a silent '0 bytes freed'."""
+        runner = CliRunner()
+        result = runner.invoke(cli, ["clean", "--path", str(tmp_path / "missing")])
+        assert result.exit_code == 2
+        assert "does not exist" in result.output

@@ -128,6 +128,48 @@ class TestCondaDetector:
             envs = CondaDetector().detect(tmp_path)
         assert all(e.managed_by == "conda" for e in envs)
 
+    def test_detects_env_with_spaces_in_path(self, tmp_path: Path) -> None:
+        # Regression: the path was taken as the last whitespace-separated
+        # token, so paths containing spaces were truncated and skipped.
+        env_path = tmp_path / "My Projects" / "envs" / "myenv"
+        env_path.mkdir(parents=True)
+        output = self._conda_output([f"myenv                 {env_path}"])
+        with (
+            patch("shutil.which", return_value="/usr/bin/conda"),
+            patch("subprocess.run") as mock_run,
+        ):
+            mock_run.return_value = MagicMock(returncode=0, stdout=output, stderr="")
+            envs = CondaDetector().detect(tmp_path)
+        assert len(envs) == 1
+        assert envs[0].path == env_path
+
+    def test_detects_prefix_only_env_without_name(self, tmp_path: Path) -> None:
+        # Envs created with `conda create --prefix` are listed without a
+        # name column; the basename is used as the display name.
+        env_path = tmp_path / "prefix-env"
+        env_path.mkdir()
+        output = self._conda_output([f"                      {env_path}"])
+        with (
+            patch("shutil.which", return_value="/usr/bin/conda"),
+            patch("subprocess.run") as mock_run,
+        ):
+            mock_run.return_value = MagicMock(returncode=0, stdout=output, stderr="")
+            envs = CondaDetector().detect(tmp_path)
+        assert len(envs) == 1
+        assert envs[0].name == "prefix-env"
+
+    def test_skips_active_prefix_only_env(self, tmp_path: Path) -> None:
+        env_path = tmp_path / "active-prefix"
+        env_path.mkdir()
+        output = self._conda_output([f"                   *  {env_path}"])
+        with (
+            patch("shutil.which", return_value="/usr/bin/conda"),
+            patch("subprocess.run") as mock_run,
+        ):
+            mock_run.return_value = MagicMock(returncode=0, stdout=output, stderr="")
+            envs = CondaDetector().detect(tmp_path)
+        assert envs == []
+
 
 # ---------------------------------------------------------------------------
 # PoetryDetector

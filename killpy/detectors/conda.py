@@ -14,7 +14,36 @@ from killpy.models import Environment
 
 logger = logging.getLogger(__name__)
 
-_MIN_FIELDS = 2
+
+def _looks_like_path(text: str) -> bool:
+    """Return True when *text* starts with a filesystem path (not an env name)."""
+    if text.startswith(("/", "\\")):
+        return True
+    return len(text) > 1 and text[1] == ":"  # Windows drive, e.g. C:\...
+
+
+def _parse_env_line(line: str) -> tuple[str, Path, bool] | None:
+    """Parse one ``conda env list`` row into ``(name, path, is_active)``.
+
+    Rows look like ``name  [*]  /path`` or, for environments created with
+    ``--prefix``, just ``[*]  /path``.  The path may contain spaces, so it
+    must be taken as the whole remainder of the line — not the last
+    whitespace-separated token.
+    """
+    rest = line.strip()
+    name = ""
+    if not rest.startswith("*") and not _looks_like_path(rest):
+        name, _, rest = rest.partition(" ")
+        rest = rest.strip()
+        if not rest:
+            return None
+    is_active = rest.startswith("*")
+    if is_active:
+        rest = rest[1:].strip()
+    if not rest:
+        return None
+    path = Path(rest)
+    return name or path.name, path, is_active
 
 
 class CondaDetector(AbstractDetector):
@@ -51,16 +80,14 @@ class CondaDetector(AbstractDetector):
             if not line or line.startswith("#"):
                 continue
 
-            fields = line.split()
-            # Skip the currently-active environment (marked with *)
-            if "*" in fields:
-                continue
-            if len(fields) < _MIN_FIELDS:
+            parsed = _parse_env_line(line)
+            if parsed is None:
                 logger.debug("Skipping malformed conda row: %r", line)
                 continue
-
-            env_name = fields[0]
-            env_path = Path(fields[-1])
+            env_name, env_path, is_active = parsed
+            # Never offer the currently-active environment for deletion.
+            if is_active:
+                continue
             try:
                 stat = env_path.stat()
                 size = get_total_size(env_path)

@@ -193,9 +193,9 @@ class Scanner:
             global_version_file = _pyenv_root() / "version"
             try:
                 global_version = global_version_file.read_text().strip()
-                if global_version and (
-                    env.name == global_version or str(env.path).endswith(global_version)
-                ):
+                # Compare the exact directory name: endswith() would also
+                # match e.g. "my-3.12.1" when the global version is "3.12.1".
+                if global_version and global_version in (env.name, env.path.name):
                     env.is_system_critical = True
             except OSError:
                 pass
