@@ -272,6 +272,57 @@ class TestCleanerSystemCritical:
 
 
 # ---------------------------------------------------------------------------
+# sanity guards on filesystem deletion targets
+# ---------------------------------------------------------------------------
+
+
+class TestCleanerSanityGuards:
+    def _assert_refused(self, path: Path, match: str) -> None:
+        env = _env(path=path)
+        with patch("shutil.rmtree") as mock_rm:
+            with pytest.raises(CleanerError, match=match):
+                Cleaner().delete(env)
+        mock_rm.assert_not_called()
+
+    def test_refuses_filesystem_root(self) -> None:
+        self._assert_refused(Path("/"), "filesystem root")
+
+    def test_refuses_home_directory(self) -> None:
+        self._assert_refused(Path.home(), "home directory")
+
+    def test_refuses_top_level_directory(self) -> None:
+        self._assert_refused(Path("/usr"), "top-level directory")
+
+    def test_refuses_symlinked_environment(self, tmp_path: Path) -> None:
+        """A dir swapped for a symlink between scan and delete is refused."""
+        target = tmp_path / "real-env"
+        target.mkdir()
+        (target / "keep.txt").write_text("data")
+        link = tmp_path / "scanned-env"
+        link.symlink_to(target, target_is_directory=True)
+
+        with pytest.raises(CleanerError, match="symlink"):
+            Cleaner().delete(_env(path=link))
+
+        assert (target / "keep.txt").exists()
+        assert link.is_symlink()
+
+    def test_force_does_not_bypass_sanity_guards(self) -> None:
+        env = _env(path=Path("/"))
+        with patch("shutil.rmtree") as mock_rm:
+            with pytest.raises(CleanerError, match="filesystem root"):
+                Cleaner(force=True).delete(env)
+        mock_rm.assert_not_called()
+
+    def test_deep_paths_still_delete_normally(self, tmp_path: Path) -> None:
+        env_path = tmp_path / "project" / ".venv"
+        env_path.mkdir(parents=True)
+        freed = Cleaner().delete(_env(path=env_path, size=10))
+        assert freed == 10
+        assert not env_path.exists()
+
+
+# ---------------------------------------------------------------------------
 # delete_many error handling
 # ---------------------------------------------------------------------------
 

@@ -27,6 +27,10 @@ from killpy.models import Environment
 
 logger = logging.getLogger(__name__)
 
+# Minimum number of path components below the filesystem root for a
+# deletion target: refuses e.g. /usr or /home, which are never environments.
+_MIN_DEPTH_BELOW_ROOT = 2
+
 
 class CleanerError(Exception):
     """Raised when a deletion operation fails."""
@@ -142,11 +146,39 @@ class Cleaner:
     # ------------------------------------------------------------------ #
 
     @staticmethod
+    def _ensure_sane_deletion_target(path: Path) -> None:
+        """Refuse obviously wrong deletion targets (defense in depth).
+
+        The scanner should never produce these, but a bug upstream — or a
+        directory swapped underneath us between scan and delete — must not
+        translate into wiping the filesystem root, the user's home, or a
+        symlink's target tree.  These checks are unconditional; ``force``
+        does not bypass them.
+        """
+        if path.is_symlink():
+            raise CleanerError(
+                f"Refusing to delete {path}: it is a symlink (the "
+                "environment may have been replaced since it was scanned)"
+            )
+        try:
+            resolved = path.resolve()
+        except OSError as exc:
+            raise CleanerError(f"Cannot resolve {path}: {exc}") from exc
+        anchor = Path(resolved.anchor)
+        if resolved == anchor:
+            raise CleanerError(f"Refusing to delete the filesystem root: {resolved}")
+        if resolved == Path.home():
+            raise CleanerError(f"Refusing to delete the home directory: {resolved}")
+        if len(resolved.parts) - len(anchor.parts) < _MIN_DEPTH_BELOW_ROOT:
+            raise CleanerError(f"Refusing to delete top-level directory: {resolved}")
+
+    @staticmethod
     def _remove_filesystem(path: Path) -> bool:
         """Remove *path* recursively; return False when it no longer exists."""
         if not path.exists():
             logger.warning("Path no longer exists: %s", path)
             return False
+        Cleaner._ensure_sane_deletion_target(path)
         shutil.rmtree(path)
         return True
 
