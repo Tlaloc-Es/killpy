@@ -41,15 +41,36 @@ class TestGetTotalSize:
         """Should not raise if a file disappears mid-scan."""
         f = tmp_path / "ghost.txt"
         f.write_bytes(b"x")
-        # simulate a FileNotFoundError during stat
-        original_rglob = tmp_path.rglob
-
-        def _rglob(pattern):
-            yield from original_rglob(pattern)
-
         # Even if a file disappears, get_total_size should not raise
         result = get_total_size(tmp_path)
         assert isinstance(result, int)
+
+    def test_does_not_follow_directory_symlinks(self, tmp_path: Path) -> None:
+        """A symlinked directory inside the tree must not pull in outside
+        content (guards against pathlib ``**`` symlink-following semantics,
+        which varied across Python versions)."""
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outside / "big.bin").write_bytes(b"x" * 10_000)
+        tree = tmp_path / "tree"
+        tree.mkdir()
+        (tree / "own.txt").write_bytes(b"y" * 100)
+        (tree / "link").symlink_to(outside, target_is_directory=True)
+
+        total = get_total_size(tree)
+
+        assert 100 <= total < 10_000
+
+    def test_counts_file_symlink_as_link_not_target(self, tmp_path: Path) -> None:
+        """Regression: is_file()/stat() followed file symlinks, so a link
+        into a large file outside the env inflated its reported size."""
+        target = tmp_path / "target.bin"
+        target.write_bytes(b"x" * 10_000)
+        tree = tmp_path / "tree"
+        tree.mkdir()
+        (tree / "link.bin").symlink_to(target)
+
+        assert get_total_size(tree) < 10_000
 
 
 class TestFormatSize:
@@ -103,9 +124,40 @@ class TestRemovePycache:
         cache.mkdir()
         (cache / "x.pyc").write_bytes(b"y")
         with patch("shutil.rmtree", side_effect=PermissionError("denied")):
-            # Should not raise
+            # Should not raise, and a failed removal frees nothing
             freed = remove_pycache(tmp_path)
-        assert freed >= 0
+        assert freed == 0
+
+    def test_does_not_delete_through_directory_symlink(self, tmp_path: Path) -> None:
+        """A symlinked dir inside the tree must never expose outside caches
+        to deletion, regardless of the interpreter's glob semantics."""
+        outside = tmp_path / "outside"
+        pycache_outside = outside / "__pycache__"
+        pycache_outside.mkdir(parents=True)
+        (pycache_outside / "x.pyc").write_bytes(b"z")
+        tree = tmp_path / "tree"
+        tree.mkdir()
+        (tree / "link").symlink_to(outside, target_is_directory=True)
+
+        freed = remove_pycache(tree)
+
+        assert freed == 0
+        assert pycache_outside.exists()
+
+    def test_skips_symlink_named_pycache(self, tmp_path: Path) -> None:
+        """Regression: a symlink named __pycache__ had its target's content
+        counted as freed space (and was handed to rmtree)."""
+        target = tmp_path / "real-dir"
+        target.mkdir()
+        (target / "data.txt").write_bytes(b"important")
+        tree = tmp_path / "tree"
+        tree.mkdir()
+        (tree / "__pycache__").symlink_to(target, target_is_directory=True)
+
+        freed = remove_pycache(tree)
+
+        assert freed == 0
+        assert (target / "data.txt").exists()
 
 
 # ---------------------------------------------------------------------------
