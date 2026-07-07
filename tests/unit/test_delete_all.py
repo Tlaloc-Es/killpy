@@ -17,13 +17,14 @@ from killpy.intelligence.tracker import UsageTracker
 from killpy.models import Environment
 
 
-def _make_env(path: str, size: int) -> Environment:
+def _make_env(path: str, size: int, critical: bool = False) -> Environment:
     return Environment(
         path=Path(path),
         name=path,
         type=".venv",
         last_accessed=datetime(2024, 1, 1, tzinfo=timezone.utc),
         size_bytes=size,
+        is_system_critical=critical,
     )
 
 
@@ -133,3 +134,36 @@ def test_delete_all_reports_when_nothing_found(
     main_mod._run_delete_all(tmp_path, set(), yes=True)
 
     assert "No environments found" in capsys.readouterr().out
+
+
+def test_delete_all_skips_system_critical_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """In-use environments must be skipped, reported, and not counted."""
+    env_ok = _make_env("/data/a/.venv", 10)
+    env_active = _make_env("/data/active/.venv", 20, critical=True)
+    deleted = _patch_pipeline(monkeypatch, tmp_path, [env_ok, env_active])
+
+    main_mod._run_delete_all(tmp_path, set(), yes=True)
+
+    assert deleted == [env_ok]
+    output = capsys.readouterr().out
+    assert "currently in use" in output
+    assert "Deleted 1/1" in output
+
+
+def test_delete_all_force_includes_system_critical(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    env_ok = _make_env("/data/a/.venv", 10)
+    env_active = _make_env("/data/active/.venv", 20, critical=True)
+    deleted = _patch_pipeline(monkeypatch, tmp_path, [env_ok, env_active])
+
+    main_mod._run_delete_all(tmp_path, set(), yes=True, force=True)
+
+    assert deleted == [env_ok, env_active]
+    assert "Deleted 2/2" in capsys.readouterr().out

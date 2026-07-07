@@ -40,10 +40,15 @@ class Cleaner:
     dry_run:
         When ``True`` no destructive operations are performed; the method
         still returns the would-be size so callers can show totals.
+    force:
+        When ``True``, allow deleting environments flagged
+        :attr:`~killpy.models.Environment.is_system_critical` (currently in
+        use).  By default those are refused with a :class:`CleanerError`.
     """
 
-    def __init__(self, dry_run: bool = False) -> None:
+    def __init__(self, dry_run: bool = False, force: bool = False) -> None:
         self.dry_run = dry_run
+        self.force = force
 
     # ------------------------------------------------------------------ #
     #  Public API                                                          #
@@ -68,8 +73,15 @@ class Cleaner:
         Raises
         ------
         CleanerError
-            If the underlying removal command fails.
+            If the underlying removal command fails, or when *env* is
+            system-critical and :attr:`force` is ``False``.
         """
+        if env.is_system_critical and not self.force:
+            raise CleanerError(
+                f"Refusing to delete {env.path}: environment is currently in "
+                "use (system-critical). Pass --force to delete it anyway."
+            )
+
         if self.dry_run:
             logger.info("[dry-run] Would delete %s (%s)", env.path, env.size_human)
             return env.size_bytes

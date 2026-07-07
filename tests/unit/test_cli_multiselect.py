@@ -29,13 +29,14 @@ class RecordingCleaner:
         return env.size_bytes
 
 
-def _make_env(path: str, size: int) -> Environment:
+def _make_env(path: str, size: int, critical: bool = False) -> Environment:
     return Environment(
         path=Path(path),
         name=path,
         type=".venv",
         last_accessed=datetime(2024, 1, 1, tzinfo=timezone.utc),
         size_bytes=size,
+        is_system_critical=critical,
     )
 
 

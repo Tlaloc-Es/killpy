@@ -29,6 +29,7 @@ def _env(
     env_type: str = "venv",
     size: int = 1024,
     managed_by: str | None = None,
+    critical: bool = False,
 ) -> Environment:
     return Environment(
         path=path or Path("/fake/myenv"),
@@ -37,6 +38,7 @@ def _env(
         last_accessed=datetime(2024, 3, 15, tzinfo=timezone.utc),
         size_bytes=size,
         managed_by=managed_by,
+        is_system_critical=critical,
     )
 
 
@@ -192,6 +194,44 @@ class TestDeleteCommand:
             )
         mock_cleaner.return_value.delete.assert_not_called()
         assert "Dry run" in result.output
+
+    def test_skips_system_critical_by_default(self) -> None:
+        """In-use environments are skipped and reported, not deleted."""
+        envs = [_env(name="normal"), _env(name="active", critical=True)]
+        with (
+            patch("killpy.commands.delete.Scanner") as mock_scanner,
+            patch("killpy.commands.delete.Cleaner") as mock_cleaner,
+        ):
+            mock_scanner.return_value.scan.return_value = envs
+            mock_cleaner.return_value.delete.side_effect = lambda e: e.size_bytes
+            runner = CliRunner()
+            result = runner.invoke(cli, ["delete", "--path", "/tmp", "--yes"])
+        assert result.exit_code == 0
+        assert "currently in use" in result.output
+        deleted = [
+            call.args[0] for call in mock_cleaner.return_value.delete.call_args_list
+        ]
+        assert [e.name for e in deleted] == ["normal"]
+
+    def test_force_includes_system_critical(self) -> None:
+        envs = [_env(name="active", critical=True)]
+        with (
+            patch("killpy.commands.delete.Scanner") as mock_scanner,
+            patch("killpy.commands.delete.Cleaner") as mock_cleaner,
+        ):
+            mock_scanner.return_value.scan.return_value = envs
+            mock_cleaner.return_value.delete.side_effect = lambda e: e.size_bytes
+            runner = CliRunner()
+            result = runner.invoke(
+                cli, ["delete", "--path", "/tmp", "--yes", "--force"]
+            )
+        assert result.exit_code == 0
+        assert "currently in use" not in result.output
+        deleted = [
+            call.args[0] for call in mock_cleaner.return_value.delete.call_args_list
+        ]
+        assert [e.name for e in deleted] == ["active"]
+        assert mock_cleaner.call_args.kwargs.get("force") is True
 
     def test_skip_confirmation_with_yes_flag(self) -> None:
         envs = [_env(name="proj")]

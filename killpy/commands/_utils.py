@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
+from rich.console import Console
+
 from killpy.models import Environment
 
 # Maps user-facing type names (detector names) to the concrete ``Environment.type``
@@ -25,6 +27,28 @@ _TYPE_ALIASES: dict[str, frozenset[str]] = {
         }
     ),
 }
+
+
+def partition_in_use(
+    envs: list[Environment], force: bool, console: Console
+) -> list[Environment]:
+    """Drop in-use (system-critical) environments unless *force*, reporting skips.
+
+    Returns the environments that are safe to delete.  When *force* is
+    ``True`` the list is returned unchanged.
+    """
+    if force:
+        return envs
+    protected = [e for e in envs if e.is_system_critical]
+    if not protected:
+        return envs
+    console.print(
+        f"\n[yellow]Skipping {len(protected)} environment(s) currently in use"
+        " — pass --force to include them:[/yellow]"
+    )
+    for env in protected:
+        console.print(f"  [dim]⚠ {env.path}[/dim]")
+    return [e for e in envs if not e.is_system_critical]
 
 
 def filter_envs(

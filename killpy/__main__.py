@@ -9,6 +9,7 @@ from rich.prompt import Confirm
 
 from killpy.cleaner import Cleaner, CleanerError
 from killpy.cli import TableApp
+from killpy.commands._utils import partition_in_use
 from killpy.commands.clean import clean
 from killpy.commands.delete import delete_cmd
 from killpy.commands.doctor import doctor_cmd
@@ -20,11 +21,13 @@ from killpy.intelligence.tracker import UsageTracker
 from killpy.scanner import Scanner
 
 
-def _run_delete_all(path: Path, excluded: set[str], yes: bool) -> None:
+def _run_delete_all(
+    path: Path, excluded: set[str], yes: bool, force: bool = False
+) -> None:
     """Scan and delete all discovered environments without launching the TUI."""
     console = Console()
     scanner = Scanner(excluded=excluded)
-    cleaner = Cleaner()
+    cleaner = Cleaner(force=force)
 
     with Progress(
         SpinnerColumn(),
@@ -33,6 +36,8 @@ def _run_delete_all(path: Path, excluded: set[str], yes: bool) -> None:
         transient=True,
     ):
         envs = scanner.scan(path)
+
+    envs = partition_in_use(envs, force, console)
 
     if not envs:
         console.print("[yellow]No environments found.[/yellow]")
@@ -116,15 +121,24 @@ def _run_delete_all(path: Path, excluded: set[str], yes: bool) -> None:
     default=False,
     help="Skip the confirmation prompt (use together with --delete-all).",
 )
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help=(
+        "With --delete-all: also delete environments currently in use "
+        "(flagged system-critical)."
+    ),
+)
 @click.pass_context
-def cli(ctx, path: Path, exclude: str, delete_all: bool, yes: bool):
+def cli(ctx, path: Path, exclude: str, delete_all: bool, yes: bool, force: bool):
     logging.basicConfig(level=logging.WARNING)
     excluded = (
         {p.strip() for p in exclude.split(",") if p.strip()} if exclude else set()
     )
     if not ctx.invoked_subcommand:
         if delete_all:
-            _run_delete_all(path, excluded, yes)
+            _run_delete_all(path, excluded, yes, force)
         else:
             app = TableApp(root_dir=path, excluded=excluded)
             app.run()

@@ -26,6 +26,7 @@ def _env(
     env_type: str = "venv",
     size: int = 2048,
     managed_by: str | None = None,
+    critical: bool = False,
 ) -> Environment:
     return Environment(
         path=path or Path("/fake/env"),
@@ -34,6 +35,7 @@ def _env(
         last_accessed=datetime(2024, 6, 1, tzinfo=timezone.utc),
         size_bytes=size,
         managed_by=managed_by,
+        is_system_critical=critical,
     )
 
 
@@ -224,6 +226,49 @@ class TestCleanerUvTool:
             cleaner = Cleaner()
             with pytest.raises(CleanerError, match="uv tool uninstall failed"):
                 cleaner.delete(env)
+
+
+# ---------------------------------------------------------------------------
+# system-critical (in use) environments
+# ---------------------------------------------------------------------------
+
+
+class TestCleanerSystemCritical:
+    def test_refuses_to_delete_critical_env(self, tmp_path: Path) -> None:
+        env_path = tmp_path / "active-env"
+        env_path.mkdir()
+        env = _env(path=env_path, critical=True)
+        with pytest.raises(CleanerError, match="currently in use"):
+            Cleaner().delete(env)
+        assert env_path.exists()
+
+    def test_force_deletes_critical_env(self, tmp_path: Path) -> None:
+        env_path = tmp_path / "active-env"
+        env_path.mkdir()
+        env = _env(path=env_path, size=123, critical=True)
+        freed = Cleaner(force=True).delete(env)
+        assert freed == 123
+        assert not env_path.exists()
+
+    def test_dry_run_also_refuses_critical_env(self, tmp_path: Path) -> None:
+        env = _env(path=tmp_path / "active-env", critical=True)
+        with pytest.raises(CleanerError, match="currently in use"):
+            Cleaner(dry_run=True).delete(env)
+
+    def test_delete_many_reports_critical_as_error(self, tmp_path: Path) -> None:
+        """delete_many must skip the critical env and keep going."""
+        good = tmp_path / "good"
+        good.mkdir()
+        active = tmp_path / "active"
+        active.mkdir()
+        envs = [
+            _env(path=active, size=100, critical=True),
+            _env(path=good, size=200),
+        ]
+        total = Cleaner().delete_many(envs)
+        assert total == 200
+        assert active.exists()
+        assert not good.exists()
 
 
 # ---------------------------------------------------------------------------

@@ -9,7 +9,7 @@ import click
 from rich.console import Console
 
 from killpy.cleaner import Cleaner, CleanerError
-from killpy.commands._utils import filter_envs
+from killpy.commands._utils import filter_envs, partition_in_use
 from killpy.files import format_size
 from killpy.intelligence.tracker import UsageTracker
 from killpy.scanner import Scanner
@@ -52,23 +52,33 @@ from killpy.scanner import Scanner
     default=False,
     help="Skip confirmation prompt.",
 )
+@click.option(
+    "--force",
+    is_flag=True,
+    default=False,
+    help="Also delete environments currently in use (flagged system-critical).",
+)
 def delete_cmd(
     path: Path,
     types: tuple[str, ...],
     older_than: int | None,
     dry_run: bool,
     yes: bool,
+    force: bool,
 ) -> None:
     """Delete detected Python environments under PATH.
 
     By default, shows a confirmation prompt before deleting.
     Use --dry-run to preview which environments would be removed.
+    Environments currently in use (system-critical) are skipped
+    unless --force is given.
     """
     console = Console()
 
     scanner = Scanner(types=set(types) if types else None)
     envs = scanner.scan(path)
     envs = filter_envs(envs, types or None, older_than)
+    envs = partition_in_use(envs, force, console)
 
     if not envs:
         console.print("[yellow]No environments found matching the criteria.[/yellow]")
@@ -104,7 +114,7 @@ def delete_cmd(
     except Exception:  # noqa: BLE001
         pass
 
-    cleaner = Cleaner(dry_run=False)
+    cleaner = Cleaner(dry_run=False, force=force)
     freed = 0
     errors = 0
 

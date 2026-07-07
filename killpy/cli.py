@@ -717,6 +717,11 @@ class TableApp(App):
     def delete_environment(self, environment: Environment) -> bool:
         # Shared helper — no tab gating here: it is called from both the
         # venv tab (delete actions) and the pipx tab (uninstall action).
+        if environment.is_system_critical:
+            self.query_one("#status-label", Label).update(
+                f"⚠️ Not deleted — currently in use: {environment.path}"
+            )
+            return False
         try:
             self.cleaner.delete(environment)
             return True
