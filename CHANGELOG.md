@@ -1,3 +1,16 @@
+## 0.25.0 (2026-07-21)
+
+### Feat
+
+- **safety**: refuse insane rmtree targets (root, home, top-level, symlink)
+- **safety**: skip in-use environments on delete unless --force
+
+### Fix
+
+- **files**: never follow symlinks when sizing trees or removing pycache
+- harden conda parsing, pyenv global match, clean validation, freed bytes
+- **detectors**: honour env overrides and platform default locations
+
 ## 0.24.2 (2026-07-02)
 
 ### Fix
