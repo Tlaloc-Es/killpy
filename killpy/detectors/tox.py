@@ -42,7 +42,7 @@ class ToxDetector(AbstractDetector):
                                 path=tox_path,
                                 name=str(tox_path),
                                 type="tox",
-                                last_accessed=mtime,
+                                last_modified=mtime,
                                 size_bytes=size,
                             )
                         )

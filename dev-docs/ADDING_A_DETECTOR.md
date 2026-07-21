@@ -152,7 +152,7 @@ class FooDetector(AbstractDetector):
                             path=env_dir,
                             name=env_dir.name,
                             type="foo",
-                            last_accessed=datetime.fromtimestamp(
+                            last_modified=datetime.fromtimestamp(
                                 stat.st_mtime, tz=timezone.utc
                             ),
                             size_bytes=get_total_size(env_dir),

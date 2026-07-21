@@ -19,7 +19,7 @@ Example shape:
     "absolute_path": "/home/user/projects/demo/.venv",
     "name": "/home/user/projects/demo/.venv",
     "type": "venv",
-    "last_accessed": "2026-04-02T10:00:00",
+    "last_modified": "2026-04-02T10:00:00",
     "size_bytes": 183500800,
     "size_human": "175.0 MB",
     "managed_by": null,
@@ -39,7 +39,7 @@ This emits one JSON object per line as results become available.
 Example:
 
 ```json
-{"path": "projects/demo/.venv", "absolute_path": "/home/user/projects/demo/.venv", "name": "/home/user/projects/demo/.venv", "type": "venv", "last_accessed": "2026-04-02T10:00:00", "size_bytes": 183500800, "size_human": "175.0 MB", "managed_by": null, "is_system_critical": false}
+{"path": "projects/demo/.venv", "absolute_path": "/home/user/projects/demo/.venv", "name": "/home/user/projects/demo/.venv", "type": "venv", "last_modified": "2026-04-02T10:00:00", "size_bytes": 183500800, "size_human": "175.0 MB", "managed_by": null, "is_system_critical": false}
 ```
 
 NDJSON is useful when you want to pipe results into `jq` or process them incrementally.
@@ -61,7 +61,7 @@ Example shape:
     "absolute_path": "/home/user/projects/api/.venv",
     "name": "/home/user/projects/api/.venv",
     "type": "venv",
-    "last_accessed": "2026-04-02T10:00:00",
+    "last_modified": "2026-04-02T10:00:00",
     "size_bytes": 183500800,
     "size_human": "175.0 MB",
     "managed_by": null,

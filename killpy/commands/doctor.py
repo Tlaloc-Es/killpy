@@ -195,7 +195,7 @@ def _output_rich(
 
         now = datetime.now(tz=timezone.utc)
         for se in top:
-            la = se.env.last_accessed
+            la = se.env.last_modified
             if la.tzinfo is None:
                 la = la.replace(tzinfo=timezone.utc)
             age_days = (now - la).days
@@ -264,7 +264,7 @@ def _print_category_table(
 
     now = datetime.now(tz=timezone.utc)
     for se in scored_envs:
-        la = se.env.last_accessed
+        la = se.env.last_modified
         if la.tzinfo is None:
             la = la.replace(tzinfo=timezone.utc)
         age_days = (now - la).days

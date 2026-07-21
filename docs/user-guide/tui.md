@@ -16,7 +16,7 @@ The TUI starts with an empty table and updates progressively while detector task
 ## Keyboard shortcuts
 
 - `j` / `k`: move the cursor
-- `/`: open the regex path filter
+- `/`: open the path filter (substring match)
 - `Escape`: clear and close the filter input
 - `d`: mark an environment for deletion
 - `Ctrl+d`: delete marked rows or all selected rows in multi-select mode

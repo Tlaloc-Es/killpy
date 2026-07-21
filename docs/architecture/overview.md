@@ -95,8 +95,7 @@ The score determines *sort order* within each category. It does **not** determin
 
 1. **HIGH** — `is_orphan == True` and `age ≥ 180 days`
 1. **LOW** — `git.is_active == True` or `age < 120 days`
-1. **MEDIUM** — `age ≥ 120 days`
-1. **LOW** — fallback
+1. **MEDIUM** — `age ≥ 120 days` *(exhaustive fallback)*
 
 Age and orphan status dominate. Size does not affect classification.
 

@@ -105,6 +105,6 @@ def _make_env(dir_path: Path, tag: str) -> Environment:
         path=dir_path,
         name=str(dir_path),
         type=tag,
-        last_accessed=mtime,
+        last_modified=mtime,
         size_bytes=size,
     )

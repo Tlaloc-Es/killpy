@@ -37,7 +37,7 @@ from killpy.scanner import Scanner
     type=int,
     default=None,
     metavar="DAYS",
-    help="Only delete environments not accessed in the last N days.",
+    help="Only delete environments not modified in the last N days.",
 )
 @click.option(
     "--dry-run",

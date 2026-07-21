@@ -99,7 +99,7 @@ Defines every shared data shape in the project: `Environment`, `GitInfo`,
 
 - Single-file contract means the boundary between layers is obvious.
 - `to_dict()` serialisation lives here, keeping JSON output consistent.
-- `size_human` and `last_accessed_str` as `@property` avoids duplication in
+- `size_human` and `last_modified_str` as `@property` avoids duplication in
   display code.
 
 ### Problems

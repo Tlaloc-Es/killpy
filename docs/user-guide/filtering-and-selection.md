@@ -19,11 +19,13 @@ killpy list --older-than 90
 killpy delete --older-than 180 --dry-run
 ```
 
-This filter is based on the recorded last-accessed timestamp stored in each `Environment` object.
+This filter is based on the recorded last-modified timestamp (`st_mtime`) stored in each `Environment` object.
 
-## Regex filtering in the TUI
+## Path filtering in the TUI
 
-Press `/` in the TUI to filter visible rows by path. The filter uses regular expressions and updates the environment table live.
+Press `/` in the TUI to filter visible rows by path. The filter is a
+case-insensitive substring match and updates the environment table live as you
+type.
 
 Examples:
 
@@ -32,10 +34,11 @@ django
 ```
 
 ```text
-/(api|worker|etl)/
+projects/api
 ```
 
-If the regex is invalid, the TUI falls back to showing all rows.
+Any row whose path contains the typed text is kept; an empty query shows all
+rows.
 
 ## Multi-select workflow
 

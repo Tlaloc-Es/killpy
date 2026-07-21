@@ -48,7 +48,7 @@ def _env(
         path=Path(f"/fake/{name}"),
         name=name,
         type=env_type,
-        last_accessed=la,
+        last_modified=la,
         size_bytes=size,
     )
 

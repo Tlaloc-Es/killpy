@@ -97,7 +97,7 @@ class CondaDetector(AbstractDetector):
                         path=env_path,
                         name=env_name,
                         type="conda",
-                        last_accessed=mtime,
+                        last_modified=mtime,
                         size_bytes=size,
                         managed_by="conda",
                     )

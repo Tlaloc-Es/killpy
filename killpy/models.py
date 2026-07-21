@@ -35,8 +35,9 @@ class Environment:
     type:
         Short detector tag, e.g. ``"venv"``, ``"pyvenv.cfg"``, ``"poetry"``,
         ``"conda"``, ``"pipx"``, ``"cache"``, ``"uv"``, ``"artifacts"``…
-    last_accessed:
-        Timestamp of the last modification reported by the filesystem.
+    last_modified:
+        Last modification time (``st_mtime``) of the environment root, as
+        reported by the filesystem — not an access time.
     size_bytes:
         Total size in bytes (recursive directory sum).
     managed_by:
@@ -48,7 +49,7 @@ class Environment:
     path: Path
     name: str
     type: str
-    last_accessed: datetime
+    last_modified: datetime
     size_bytes: int
     managed_by: str | None = None
     is_system_critical: bool = False
@@ -63,9 +64,9 @@ class Environment:
         return format_size(self.size_bytes)
 
     @property
-    def last_accessed_str(self) -> str:
+    def last_modified_str(self) -> str:
         """Formatted date string ``DD/MM/YYYY`` for display."""
-        return self.last_accessed.strftime("%d/%m/%Y")
+        return self.last_modified.strftime("%d/%m/%Y")
 
     # ------------------------------------------------------------------ #
     #  Serialisation                                                       #
@@ -83,7 +84,7 @@ class Environment:
             "absolute_path": str(abs_path),
             "name": self.name,
             "type": self.type,
-            "last_accessed": self.last_accessed.isoformat(),
+            "last_modified": self.last_modified.isoformat(),
             "size_bytes": self.size_bytes,
             "size_human": self.size_human,
             "managed_by": self.managed_by,

@@ -35,7 +35,7 @@ def _env(
         path=path or Path("/fake/myenv"),
         name=name,
         type=env_type,
-        last_accessed=datetime(2024, 3, 15, tzinfo=timezone.utc),
+        last_modified=datetime(2024, 3, 15, tzinfo=timezone.utc),
         size_bytes=size,
         managed_by=managed_by,
         is_system_critical=critical,
@@ -290,7 +290,7 @@ class TestDeleteFilters:
 
     def test_older_than_filter(self) -> None:
         old = _env(name="old", env_type="venv")
-        # last_accessed is datetime(2024, 3, 15, tzinfo=utc) — more than 30 days ago
+        # last_modified is datetime(2024, 3, 15, tzinfo=utc) — more than 30 days ago
         result = self._run_delete(["--older-than", "1", "--yes"], [old])
         assert result.exit_code == 0
 

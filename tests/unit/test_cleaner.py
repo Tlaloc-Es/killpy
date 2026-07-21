@@ -32,7 +32,7 @@ def _env(
         path=path or Path("/fake/env"),
         name=name,
         type=env_type,
-        last_accessed=datetime(2024, 6, 1, tzinfo=timezone.utc),
+        last_modified=datetime(2024, 6, 1, tzinfo=timezone.utc),
         size_bytes=size,
         managed_by=managed_by,
         is_system_critical=critical,

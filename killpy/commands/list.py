@@ -58,7 +58,7 @@ def _print_table(envs: list, console: Console) -> None:
     table = Table(show_header=True, header_style="bold cyan")
     table.add_column("Type", style="dim", min_width=10)
     table.add_column("Name", min_width=20)
-    table.add_column("Last accessed", min_width=12)
+    table.add_column("Last modified", min_width=12)
     table.add_column("Size", justify="right", min_width=9)
     table.add_column("Path")
 
@@ -66,7 +66,7 @@ def _print_table(envs: list, console: Console) -> None:
         table.add_row(
             env.type,
             env.name,
-            env.last_accessed_str,
+            env.last_modified_str,
             env.size_human,
             str(env.path),
         )
@@ -101,7 +101,7 @@ def _print_table(envs: list, console: Console) -> None:
     type=int,
     default=None,
     metavar="DAYS",
-    help="Only show environments not accessed in the last N days.",
+    help="Only show environments not modified in the last N days.",
 )
 @click.option(
     "--json-stream",

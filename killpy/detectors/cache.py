@@ -147,6 +147,6 @@ def _make_cache_env(cache_path: Path, tag: str) -> Environment:
         path=cache_path,
         name=str(cache_path),
         type=tag,
-        last_accessed=mtime,
+        last_modified=mtime,
         size_bytes=size,
     )

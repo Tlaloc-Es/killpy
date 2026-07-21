@@ -98,7 +98,7 @@ class TestVenvDetector:
         env = envs[0]
         assert isinstance(env, Environment)
         assert isinstance(env.path, Path)
-        assert isinstance(env.last_accessed, datetime)
+        assert isinstance(env.last_modified, datetime)
         assert env.size_bytes >= 0
         assert env.size_human  # non-empty string
 

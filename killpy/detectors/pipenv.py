@@ -62,7 +62,7 @@ class PipenvDetector(AbstractDetector):
                             path=venv_path,
                             name=venv_path.name,
                             type="pipenv",
-                            last_accessed=mtime,
+                            last_modified=mtime,
                             size_bytes=size,
                         )
                     )

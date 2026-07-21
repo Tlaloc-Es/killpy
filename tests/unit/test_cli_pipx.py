@@ -21,18 +21,14 @@ def _make_pipx_env(name: str, size: int) -> Environment:
         path=Path(f"/data/pipx/venvs/{name}"),
         name=name,
         type="pipx",
-        last_accessed=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        last_modified=datetime(2024, 1, 1, tzinfo=timezone.utc),
         size_bytes=size,
         managed_by="pipx",
     )
 
 
 def test_uninstall_pipx_from_pipx_tab(tmp_path: Path) -> None:
-    """Pressing ``U`` on the pipx tab must uninstall the highlighted package.
-
-    Regression test: ``delete_environment`` used to be gated behind the
-    venv tab, so calling it from the pipx tab silently did nothing.
-    """
+    """Pressing ``U`` on the pipx tab must uninstall the highlighted package."""
 
     async def scenario() -> None:
         app, cleaner = _make_app(tmp_path)
