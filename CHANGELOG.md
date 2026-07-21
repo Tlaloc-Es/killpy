@@ -1,3 +1,9 @@
+## 0.25.1 (2026-07-21)
+
+### Refactor
+
+- align codebase consistency and dev-docs (no behavior change)
+
 ## 0.25.0 (2026-07-21)
 
 ### Feat
