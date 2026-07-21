@@ -1,3 +1,15 @@
+## 1.0.0 (2026-07-21)
+
+### BREAKING CHANGE
+
+- the `killpy list --json` / `--json-stream` output field
+`last_accessed` is renamed to `last_modified`. Scripts reading that key must
+be updated.
+
+### Refactor
+
+- correct last_accessed→last_modified semantics; drop dead rule and ReDoS filter
+
 ## 0.25.1 (2026-07-21)
 
 ### Refactor
