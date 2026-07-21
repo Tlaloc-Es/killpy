@@ -36,6 +36,8 @@ killpy list --quiet          # suppress progress output
 
 While scanning, progress is written to **stderr** so stdout stays clean for piping. Use `--quiet` / `-q` to silence progress entirely (useful in scripts or CI).
 
+The **Path** column mirrors the form of `--path` (relative in → relative out, absolute in → absolute out) and truncates long paths to keep rows readable. Full absolute paths are always preserved in `--json` and `--json-stream` output (see the `absolute_path` field).
+
 `--json-stream` emits NDJSON progressively while the scan runs.
 
 ## `killpy delete`
@@ -46,7 +48,10 @@ Use `delete` when you want a scriptable delete flow with filtering.
 killpy delete --path ~/projects --dry-run
 killpy delete --path ~/projects --type cache --older-than 30
 killpy delete --path ~/projects --yes
+killpy delete --path ~/projects --force   # include in-use (⚠) environments
 ```
+
+Environments currently in use (the one killpy runs from, or the pyenv global version) are flagged system-critical and **skipped by default** — they are listed as "currently in use" and only deleted when `--force` is given. The same applies to `killpy --delete-all`.
 
 ## `killpy stats`
 
@@ -147,10 +152,9 @@ The category is assigned deterministically by evaluating rules in order:
 | Priority | Condition | Category |
 |----------|-----------|----------|
 | 1 | `is_orphan == True` **and** `age ≥ 180 days` | `HIGH` |
-| 2 | `has_project_files == False` **and** `age ≥ 365 days` | `HIGH` |
-| 3 | `git.is_active == True` **or** `age < 120 days` | `LOW` |
-| 4 | `age ≥ 120 days` | `MEDIUM` |
-| 5 | *(fallback)* | `LOW` |
+| 2 | `git.is_active == True` **or** `age < 120 days` | `LOW` |
+| 3 | `age ≥ 120 days` | `MEDIUM` |
+| 4 | *(fallback)* | `LOW` |
 
 Age and orphan status dominate. Size has **no effect** on the category.
 

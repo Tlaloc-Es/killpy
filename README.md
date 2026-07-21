@@ -23,7 +23,7 @@ uvx killpy --path ~
 [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](<https://twitter.com/intent/tweet?text=%F0%9F%90%8D%20KillPy%20helps%20you%20reclaim%20disk%20space%20by%20detecting%20unused%20Python%20environments%20(.venv,%20poetry%20env,%20conda%20env)%20and%20pipx%20packages.%20Clean,%20organize%20and%20free%20up%20space%20effortlessly!%20%F0%9F%9A%80&url=https://github.com/Tlaloc-Es/KillPy>)
 [![Awesome Python](https://awesome.re/badge.svg)](https://github.com/vinta/awesome-python)
 
-![killpy in action](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/show.gif)
+![killpy in action](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/docs/gifs/demo.gif)
 
 </div>
 
@@ -41,6 +41,7 @@ ______________________________________________________________________
 - [CLI reference](#cli-reference)
   - [`killpy` — launch TUI or headless delete](#killpy--launch-tui-or-headless-delete)
   - [`killpy list` — inspect environments](#killpy-list--inspect-environments)
+  - [`killpy find` — locate environments with a package](#killpy-find--locate-environments-with-a-package)
   - [`killpy delete` — remove environments](#killpy-delete--remove-environments)
   - [`killpy stats` — disk usage summary](#killpy-stats--disk-usage-summary)
   - [`killpy clean` — remove cache directories](#killpy-clean--remove-cache-directories)
@@ -94,9 +95,9 @@ uvx killpy --path ~
 | `pyenv` | pyenv-managed Python versions | `~/.pyenv/versions` |
 | `pipenv` | Pipenv virtualenvs | `~/.local/share/virtualenvs` |
 | `hatch` | Hatch environments | `~/.local/share/hatch/env` |
-| `uv` | uv virtual environments | project root `.uv/` |
+| `uv` | uv tool environments (`uv tool install`) and uv-managed Pythons | `~/.local/share/uv` |
 | `tox` | tox environments | `.tox/` inside repo |
-| `cache` | `__pycache__`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, global pip/uv caches | everywhere |
+| `cache` | `__pycache__`, `.mypy_cache`, `.pytest_cache`, `.ruff_cache`, plus global pip/uv caches when the scanned path contains them | project tree, `~/.cache` |
 | `artifacts` | `dist/`, `build/`, `.egg-info`, `.dist-info` | project root |
 
 ______________________________________________________________________
@@ -159,7 +160,7 @@ killpy --path ~ --exclude "company-projects"
 
 The TUI starts immediately and streams results as each detector finishes — no waiting for a full scan before you can start browsing. Select items, mark them, and confirm; **nothing is deleted without explicit action**.
 
-Environments flagged with `⚠️` are actively in use by the current Python session — killpy will show them but they should not be deleted.
+Environments flagged with `⚠️` are actively in use (the environment killpy runs from, or the pyenv global version) — the TUI shows them but refuses to delete them.
 
 ### Keyboard shortcuts
 
@@ -210,6 +211,8 @@ Options:
   -D, --delete-all      Scan and delete ALL found environments without
                         launching the TUI
   -y, --yes             Skip confirmation prompt (use with --delete-all)
+  --force               With --delete-all: also delete environments
+                        currently in use (⚠ system-critical)
   --help                Show this message and exit.
 ```
 
@@ -227,6 +230,8 @@ ______________________________________________________________________
 
 ### `killpy list` — inspect environments
 
+![killpy list](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/docs/gifs/list.gif)
+
 ```bash
 killpy list                               # list all detected environments
 killpy list --path ~/projects             # scan a specific path
@@ -238,6 +243,8 @@ killpy list --quiet                       # suppress progress output (scripts/CI
 ```
 
 While scanning, `killpy list` shows a live progress indicator on **stderr** so you can see which detector is running. Stdout receives only the final output (table, JSON, or NDJSON), so pipes and redirections are never polluted. Use `--quiet` / `-q` to silence the progress indicator entirely.
+
+The **Path** column mirrors the form of `--path`: a relative `--path` produces relative paths, an absolute one produces absolute paths (long paths are truncated to keep rows compact). The full absolute path is always available via `--json` / `--json-stream` in the `absolute_path` field.
 
 `--json` example output:
 
@@ -263,9 +270,30 @@ While scanning, `killpy list` shows a live progress indicator on **stderr** so y
 killpy list --json-stream --path ~ | jq 'select(.type == "conda") | .size_human'
 ```
 
+![killpy list --json](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/docs/gifs/list-json.gif)
+
+______________________________________________________________________
+
+### `killpy find` — locate environments with a package
+
+![killpy find](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/docs/gifs/find.gif)
+
+Find every environment that has a given package installed. `PACKAGE` accepts
+standard PEP 508 / uv-style version specifiers.
+
+```bash
+killpy find requests                      # any version of requests
+killpy find "flask>=1.0"                   # version specifier
+killpy find "numpy>=1.24,<2.0"             # combined constraints
+killpy find requests --type venv           # restrict to a type
+killpy find requests --json                # machine-readable output
+```
+
 ______________________________________________________________________
 
 ### `killpy delete` — remove environments
+
+![killpy delete](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/docs/gifs/delete.gif)
 
 ```bash
 killpy delete                             # interactive confirmation before delete
@@ -274,12 +302,15 @@ killpy delete --dry-run                   # preview — nothing is deleted
 killpy delete --type venv                 # only a specific type
 killpy delete --type venv --type cache    # multiple types
 killpy delete --older-than 180 --yes      # delete stale envs, no prompt
+killpy delete --force                     # include in-use (⚠) environments
 killpy delete --path ~/projects
 ```
 
 ______________________________________________________________________
 
 ### `killpy stats` — disk usage summary
+
+![killpy stats](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/docs/gifs/stats.gif)
 
 ```bash
 killpy stats
@@ -308,6 +339,8 @@ ______________________________________________________________________
 
 ### `killpy clean` — remove cache directories
 
+![killpy clean](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/docs/gifs/clean.gif)
+
 ```bash
 killpy clean
 killpy clean --path ~/projects
@@ -329,6 +362,8 @@ Options:
   --json            Output as JSON.
   --help            Show this message and exit.
 ```
+
+![killpy doctor](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/docs/gifs/doctor.gif)
 
 `doctor` analyses every detected virtual environment in two phases:
 
@@ -352,10 +387,9 @@ Category is assigned deterministically by applying the following rules in order:
 | Priority | Rule | Category |
 |----------|------|----------|
 | 1 | Orphan (`is_orphan=True`) **and** `age ≥ 180 days` | `HIGH` |
-| 2 | No project files **and** `age ≥ 365 days` | `HIGH` |
-| 3 | Active git repository **or** `age < 120 days` | `LOW` |
-| 4 | `age ≥ 120 days` | `MEDIUM` |
-| 5 | Fallback | `LOW` |
+| 2 | Active git repository **or** `age < 120 days` | `LOW` |
+| 3 | `age ≥ 120 days` | `MEDIUM` |
+| 4 | Fallback | `LOW` |
 
 Age and orphan status are the dominant signals. Size does not affect the category.
 
@@ -511,7 +545,7 @@ Or press `P` in the TUI to clean them for the scanned path.
 
 **What does ⚠️ mean next to an environment?**
 
-The environment is currently in use by the Python session running killpy. It should not be deleted. killpy will still show it so you are aware of it, but treat it with care.
+The environment is currently in use — it is the environment killpy itself runs from, or your pyenv global version. killpy shows it so you are aware of it, but refuses to delete it: the TUI always skips it, and `killpy delete` / `--delete-all` skip it unless you pass `--force`.
 
 **Does it fail if Conda, pipx or pyenv are not installed?**
 
@@ -541,7 +575,7 @@ ______________________________________________________________________
 
 ```yaml
 - repo: https://github.com/Tlaloc-Es/KillPy
-  rev: 0.20.0
+  rev: 0.24.1
   hooks:
     - id: killpy                  # remove __pycache__ on every commit
     - id: killpy-clean-caches     # also removes .mypy_cache, .pytest_cache, .ruff_cache
@@ -577,7 +611,7 @@ ______________________________________________________________________
 
 ## Safety
 
-`killpy` performs **destructive, irreversible** actions. Always review the selection before confirming removal. The `--dry-run` flag lets you preview everything safely. Environments marked `⚠️` are actively in use and should not be deleted.
+`killpy` performs **destructive, irreversible** actions. Always review the selection before confirming removal. The `--dry-run` flag lets you preview everything safely. Environments marked `⚠️` are actively in use and are skipped by every delete path unless you explicitly pass `--force`.
 
 **You are responsible for files deleted on your system.**
 
