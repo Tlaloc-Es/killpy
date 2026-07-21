@@ -42,9 +42,13 @@ create_venv() {
     local pkgs=(requests flask numpy pandas click rich textual django fastapi sqlalchemy)
     for i in $(seq 0 $((pkg_count - 1))); do
         local pkg="${pkgs[$((i % ${#pkgs[@]}))]}"
-        mkdir -p "$env_path/lib/python3.12/site-packages/${pkg}-1.0.dist-info"
+        local sp="$env_path/lib/python3.12/site-packages"
+        mkdir -p "$sp/${pkg}" "$sp/${pkg}-1.0.dist-info"
         dd if=/dev/urandom bs=1K count="$pkg_size_kb" 2>/dev/null \
-            | base64 > "$env_path/lib/python3.12/site-packages/${pkg}/__init__.py" 2>/dev/null || true
+            | base64 > "$sp/${pkg}/__init__.py" 2>/dev/null || true
+        # Minimal dist-info METADATA so `killpy find <pkg>` can match.
+        printf 'Metadata-Version: 2.1\nName: %s\nVersion: 1.0\n' "$pkg" \
+            > "$sp/${pkg}-1.0.dist-info/METADATA"
     done
 
     printf '#!/bin/sh\necho fake\n' > "$env_path/bin/python3"
@@ -79,19 +83,22 @@ setup() {
     # -----------------------------------------------------------------------
     echo "  [HIGH] Orphan environments (>6 months old, no project files)…"
 
-    create_venv "$DEMO_ROOT/high/abandoned-ml-experiment"  ".venv" 7 12
+    # Sizes are realistic (tens of MB) so `doctor`/`stats` show meaningful
+    # "wasted" totals — small KB envs fall below the 10 MB impact threshold
+    # and would render as "0 bytes" in the demo.
+    create_venv "$DEMO_ROOT/high/abandoned-ml-experiment"  ".venv" 6 5000
     age_dir     "$DEMO_ROOT/high/abandoned-ml-experiment"  500
 
-    create_venv "$DEMO_ROOT/high/old-poc"                  ".venv" 4 10
+    create_venv "$DEMO_ROOT/high/old-poc"                  ".venv" 4 5000
     age_dir     "$DEMO_ROOT/high/old-poc"                  730
 
-    create_venv "$DEMO_ROOT/high/stale-scraper"            ".venv" 3 8
+    create_venv "$DEMO_ROOT/high/stale-scraper"            ".venv" 3 5000
     age_dir     "$DEMO_ROOT/high/stale-scraper"            400
 
-    create_venv "$DEMO_ROOT/high/forgotten-prototype"      ".venv" 6 15
+    create_venv "$DEMO_ROOT/high/forgotten-prototype"      ".venv" 5 4000
     age_dir     "$DEMO_ROOT/high/forgotten-prototype"      600
 
-    create_venv "$DEMO_ROOT/high/temp-analysis"            "venv"  5 10
+    create_venv "$DEMO_ROOT/high/temp-analysis"            "venv"  4 4000
     age_dir     "$DEMO_ROOT/high/temp-analysis"            365
 
     # -----------------------------------------------------------------------
@@ -100,7 +107,7 @@ setup() {
     # -----------------------------------------------------------------------
     echo "  [HIGH] Large orphan environment (data-science stack)…"
 
-    create_venv "$DEMO_ROOT/high/heavy-datascience"        ".venv" 10 200
+    create_venv "$DEMO_ROOT/high/heavy-datascience"        ".venv" 10 12000
     age_dir     "$DEMO_ROOT/high/heavy-datascience"        450
 
     # -----------------------------------------------------------------------
@@ -170,6 +177,16 @@ setup() {
         create_venv "$DEMO_ROOT/smart/named_envs/$ne" "$ne"
     done
     age_dir "$DEMO_ROOT/smart/named_envs" 200
+
+    # -----------------------------------------------------------------------
+    # Git boundary: make DEMO_ROOT its own (commit-less) repo.
+    # Without this, every env's git analysis walks up and finds the *host*
+    # repo's very-active .git, so `doctor` marks everything "active git" →
+    # LOW, leaving the MEDIUM bucket empty. An empty repo reads as
+    # is_git_repo=True, is_active=False, giving a realistic HIGH/MEDIUM/LOW
+    # spread. (DEMO_ROOT is gitignored, so this never touches the host repo.)
+    # -----------------------------------------------------------------------
+    git init -q "$DEMO_ROOT" >/dev/null 2>&1 || true
 
     # -----------------------------------------------------------------------
     # Summary
