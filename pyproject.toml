@@ -1,15 +1,39 @@
 [project]
 name = "killpy"
 version = "0.25.0"
-description = "List all .venv directories and Conda environments 🐍 on your system and check how much space they are using. You can then choose which ones to delete in order to free up space 🧹."
+description = "Find and delete unused Python environments (.venv, conda, poetry, pipenv, pipx, pyenv, uv) and caches to free disk space — from a fast terminal UI or a single CLI command."
 readme = "README.md"
+keywords = [
+    "venv",
+    "virtualenv",
+    "conda",
+    "poetry",
+    "pipenv",
+    "pipx",
+    "pyenv",
+    "uv",
+    "cleanup",
+    "disk-space",
+    "cache",
+    "cli",
+    "tui",
+    "textual",
+    "developer-tools",
+]
 classifiers = [
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
+    "Environment :: Console :: Curses",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
 ]
 dependencies = [
     "click>=8.1.8",
