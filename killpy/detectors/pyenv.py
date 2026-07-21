@@ -68,7 +68,7 @@ class PyenvDetector(AbstractDetector):
                             path=version_dir,
                             name=version_dir.name,
                             type="pyenv",
-                            last_accessed=mtime,
+                            last_modified=mtime,
                             size_bytes=size,
                         )
                     )

@@ -69,7 +69,7 @@ class ArtifactsDetector(AbstractDetector):
                                 path=artifact_path,
                                 name=str(artifact_path),
                                 type="artifacts",
-                                last_accessed=mtime,
+                                last_modified=mtime,
                                 size_bytes=size,
                             )
                         )

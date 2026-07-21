@@ -167,7 +167,7 @@ Environments flagged with `⚠️` are actively in use (the environment killpy r
 | Key | Action |
 |-----|--------|
 | `↑` / `↓` or `k` / `j` | Move cursor up / down (vim-style) |
-| `/` | Open live search/filter bar (regex supported) |
+| `/` | Open live search/filter bar (substring match) |
 | `Escape` | Close search bar and clear filter |
 | `T` | Toggle multi-select mode on / off |
 | `Space` | *(Multi-select)* Toggle current row selected |
@@ -182,7 +182,7 @@ Environments flagged with `⚠️` are actively in use (the environment killpy r
 
 ### Search / filter
 
-Press `/` to open the filter bar at the bottom of the screen. Type any string or a Python regex — the venv table updates live as you type. Press `Escape` or submit an empty value to clear the filter and return to the full list.
+Press `/` to open the filter bar at the bottom of the screen. Type any text — the venv table filters by path substring (case-insensitive) and updates live as you type. Press `Escape` or submit an empty value to clear the filter and return to the full list.
 
 ### Multi-select mode
 
@@ -236,7 +236,7 @@ ______________________________________________________________________
 killpy list                               # list all detected environments
 killpy list --path ~/projects             # scan a specific path
 killpy list --type venv --type conda      # filter by type (repeatable)
-killpy list --older-than 90               # not accessed in the last 90 days
+killpy list --older-than 90               # not modified in the last 90 days
 killpy list --json                        # output as a JSON array
 killpy list --json-stream                 # stream as NDJSON — one line per env
 killpy list --quiet                       # suppress progress output (scripts/CI)
@@ -255,7 +255,7 @@ The **Path** column mirrors the form of `--path`: a relative `--path` produces r
     "absolute_path": "/home/user/projects/my-app/.venv",
     "name": "my-app/.venv",
     "type": "venv",
-    "last_accessed": "2025-11-02T14:23:01+00:00",
+    "last_modified": "2025-11-02T14:23:01+00:00",
     "size_bytes": 54393984,
     "size_human": "51.88 MB",
     "managed_by": null,
@@ -388,8 +388,7 @@ Category is assigned deterministically by applying the following rules in order:
 |----------|------|----------|
 | 1 | Orphan (`is_orphan=True`) **and** `age ≥ 180 days` | `HIGH` |
 | 2 | Active git repository **or** `age < 120 days` | `LOW` |
-| 3 | `age ≥ 120 days` | `MEDIUM` |
-| 4 | Fallback | `LOW` |
+| 3 | `age ≥ 120 days` *(exhaustive fallback)* | `MEDIUM` |
 
 Age and orphan status are the dominant signals. Size does not affect the category.
 
@@ -469,7 +468,7 @@ Yes. Run `killpy --path ~` to scan your home folder. The `stats` command gives a
 killpy delete --type venv --older-than 90 --yes
 ```
 
-Deletes every `.venv` / `pyvenv.cfg` env not accessed in the last 90 days, without prompting.
+Deletes every `.venv` / `pyvenv.cfg` env not modified in the last 90 days, without prompting.
 
 **How do I use killpy in a CI pipeline or script?**
 

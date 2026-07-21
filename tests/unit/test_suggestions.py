@@ -7,8 +7,7 @@ from pathlib import Path
 
 from killpy.intelligence.suggestions import (
     _HIGH_AGE_ORPHAN_THRESHOLD,
-    _LOW_AGE_THRESHOLD,
-    _MEDIUM_AGE_THRESHOLD,
+    _STALE_AGE_THRESHOLD,
     SuggestionEngine,
 )
 from killpy.models import Environment, GitInfo, ScoredEnvironment
@@ -29,7 +28,7 @@ def _env(
         path=path or Path("/fake/env"),
         name="env",
         type="venv",
-        last_accessed=datetime.now(tz=timezone.utc) - timedelta(days=days_old),
+        last_modified=datetime.now(tz=timezone.utc) - timedelta(days=days_old),
         size_bytes=size,
         managed_by=None,
     )
@@ -85,12 +84,7 @@ class TestHighCategory:
             assert suggestion.category == "HIGH", f"size={size}"
 
     def test_very_old_env_with_project_files_is_not_high(self) -> None:
-        """HIGH requires orphan status; age alone never reaches HIGH.
-
-        (A former "no project files and age >= 365" rule was removed: it
-        was unreachable because has_project_files is always the negation
-        of is_orphan, so rule 1 fired first for any qualifying env.)
-        """
+        """HIGH requires orphan status; age alone never reaches HIGH."""
         engine = SuggestionEngine()
         suggestion = engine.classify(
             _scored(
@@ -136,14 +130,14 @@ class TestMediumCategory:
     def test_old_non_orphan_env_is_medium(self) -> None:
         engine = SuggestionEngine()
         suggestion = engine.classify(
-            _scored(days_old=_MEDIUM_AGE_THRESHOLD, is_orphan=False, size=_LARGE)
+            _scored(days_old=_STALE_AGE_THRESHOLD, is_orphan=False, size=_LARGE)
         )
         assert suggestion.category == "MEDIUM"
 
     def test_slightly_above_medium_threshold_is_medium(self) -> None:
         engine = SuggestionEngine()
         suggestion = engine.classify(
-            _scored(days_old=_MEDIUM_AGE_THRESHOLD + 10, size=_SMALL)
+            _scored(days_old=_STALE_AGE_THRESHOLD + 10, size=_SMALL)
         )
         assert suggestion.category == "MEDIUM"
 
@@ -151,7 +145,7 @@ class TestMediumCategory:
         engine = SuggestionEngine()
         suggestion = engine.classify(
             _scored(
-                days_old=_MEDIUM_AGE_THRESHOLD + 10, git_info=_ACTIVE_GIT, size=_LARGE
+                days_old=_STALE_AGE_THRESHOLD + 10, git_info=_ACTIVE_GIT, size=_LARGE
             )
         )
         assert suggestion.category == "LOW"
@@ -163,14 +157,14 @@ class TestMediumCategory:
 
 
 class TestLowCategory:
-    def test_recently_used_with_active_git_is_low(self) -> None:
+    def test_recently_modified_with_active_git_is_low(self) -> None:
         engine = SuggestionEngine()
         suggestion = engine.classify(
             _scored(days_old=5, git_info=_ACTIVE_GIT, size=_LARGE)
         )
         assert suggestion.category == "LOW"
 
-    def test_recently_used_no_git_is_low(self) -> None:
+    def test_recently_modified_no_git_is_low(self) -> None:
         engine = SuggestionEngine()
         suggestion = engine.classify(_scored(days_old=5, size=_LARGE))
         assert suggestion.category == "LOW"
@@ -178,7 +172,7 @@ class TestLowCategory:
     def test_age_just_below_threshold_is_low(self) -> None:
         engine = SuggestionEngine()
         suggestion = engine.classify(
-            _scored(days_old=_LOW_AGE_THRESHOLD - 1, size=_LARGE)
+            _scored(days_old=_STALE_AGE_THRESHOLD - 1, size=_LARGE)
         )
         assert suggestion.category == "LOW"
 
@@ -206,7 +200,7 @@ class TestClassifyAll:
                 days_old=_HIGH_AGE_ORPHAN_THRESHOLD + 1,
                 size=_LARGE,
             ),
-            _scored(days_old=_MEDIUM_AGE_THRESHOLD + 5, score=0.2, size=_LARGE),
+            _scored(days_old=_STALE_AGE_THRESHOLD + 5, score=0.2, size=_LARGE),
         ]
         suggestions = engine.classify_all(envs)
         categories = [s.category for s in suggestions]
@@ -248,7 +242,7 @@ class TestSuggestionContent:
         engine = SuggestionEngine()
         for scored in [
             _scored(is_orphan=True, days_old=_HIGH_AGE_ORPHAN_THRESHOLD, size=_LARGE),
-            _scored(days_old=_MEDIUM_AGE_THRESHOLD + 10, score=0.2, size=_LARGE),
+            _scored(days_old=_STALE_AGE_THRESHOLD + 10, score=0.2, size=_LARGE),
             _scored(days_old=5, size=_LARGE),
         ]:
             suggestion = engine.classify(scored)
@@ -265,7 +259,7 @@ class TestSuggestionContent:
         engine = SuggestionEngine()
         for scored in [
             _scored(is_orphan=True, days_old=_HIGH_AGE_ORPHAN_THRESHOLD, size=_LARGE),
-            _scored(days_old=_MEDIUM_AGE_THRESHOLD + 10, size=_LARGE),
+            _scored(days_old=_STALE_AGE_THRESHOLD + 10, size=_LARGE),
             _scored(days_old=5, size=_SMALL),
         ]:
             for reason in engine.classify(scored).reasons:

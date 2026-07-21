@@ -452,7 +452,7 @@ All shared shapes are dataclasses in `models.py`: `Environment`, `GitInfo`,
 - Closed-set string fields use `typing.Literal`: `Suggestion.category` is
   `Literal["HIGH", "MEDIUM", "LOW"]`. `Environment.type` and
   `Environment.managed_by` are open `str` / `str | None` (many/extensible values).
-- Computed display values are `@property` (`size_human`, `last_accessed_str`),
+- Computed display values are `@property` (`size_human`, `last_modified_str`),
   never duplicated in callers.
 - Construct `Environment` directly in each detector. Two filesystem detectors
   use a local `_make_env` / `_make_cache_env` factory; that is a per-module

@@ -22,7 +22,7 @@ def _make_env(path: str, size: int, critical: bool = False) -> Environment:
         path=Path(path),
         name=path,
         type=".venv",
-        last_accessed=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        last_modified=datetime(2024, 1, 1, tzinfo=timezone.utc),
         size_bytes=size,
         is_system_critical=critical,
     )
@@ -72,11 +72,7 @@ def test_delete_all_continues_after_a_failed_deletion(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """A CleanerError must not abort the loop; it is reported and counted.
-
-    Regression test: the error used to propagate as an uncaught traceback,
-    aborting the mass deletion halfway with no summary.
-    """
+    """A CleanerError must not abort the loop; it is reported and counted."""
     env_ok1 = _make_env("/data/a/.venv", 10)
     env_bad = _make_env("/data/b/.venv", 20)
     env_ok2 = _make_env("/data/c/.venv", 30)
@@ -107,12 +103,7 @@ def test_delete_all_counts_zero_byte_env_as_deleted(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """An empty (0-byte) environment is a successful deletion, not a failure.
-
-    Regression test: the return value of ``Cleaner.delete`` (bytes freed)
-    was treated as a success flag, so 0-byte environments were reported
-    as 'Failed to delete'.
-    """
+    """An empty (0-byte) environment is a successful deletion, not a failure."""
     env_empty = _make_env("/data/empty/.venv", 0)
     deleted = _patch_pipeline(monkeypatch, tmp_path, [env_empty])
 

@@ -126,7 +126,7 @@ class PipxDetector(AbstractDetector):
                         path=candidate,
                         name=package_name,
                         type="pipx",
-                        last_accessed=mtime,
+                        last_modified=mtime,
                         size_bytes=size,
                         managed_by="pipx",
                     )

@@ -34,7 +34,7 @@ def _make_env(path: str, size: int, critical: bool = False) -> Environment:
         path=Path(path),
         name=path,
         type=".venv",
-        last_accessed=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        last_modified=datetime(2024, 1, 1, tzinfo=timezone.utc),
         size_bytes=size,
         is_system_critical=critical,
     )
@@ -50,11 +50,8 @@ def _make_app(tmp_path: Path) -> tuple[TableApp, RecordingCleaner]:
 
 
 def test_multi_select_deletes_selected_env_after_sort(tmp_path: Path) -> None:
-    """Sorting columns must not change which environments get deleted.
-
-    Regression test: the selection used to be stored as positional indices
-    into ``venv_rows``; sorting reordered the list in place, so Ctrl+D
-    deleted whatever environments landed on the selected positions.
+    """Sorting columns must not change which environments get deleted:
+    selections are keyed by path, not by row position.
     """
 
     async def scenario() -> None:

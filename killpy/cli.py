@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import re
 import subprocess
 import sys
 from datetime import datetime
@@ -297,7 +296,7 @@ class TableApp(App):
         yield Label("", id="status-label")
         yield Label("", id="selected-path-label")
         yield Input(
-            placeholder="Filter by path (regex)… Esc to clear",
+            placeholder="Filter by path… Esc to clear",
             id="search-input",
         )
         yield Label("", id="multi-select-label")
@@ -337,7 +336,7 @@ class TableApp(App):
             {
                 "path": str(environment.path),
                 "type": environment.type,
-                "last_modified": environment.last_accessed_str,
+                "last_modified": environment.last_modified_str,
                 "size": environment.size_bytes,
                 "size_human": environment.size_human,
                 "health": self._health_by_path.get(str(environment.path), ""),
@@ -382,13 +381,10 @@ class TableApp(App):
         table.clear(columns=True)
         table.add_columns(*self.get_headers_for_table("venv-table"))
         self._venv_display_indices = []
+        query = self._filter_query.lower()
         for i, row in enumerate(self.venv_rows):
-            if self._filter_query:
-                try:
-                    if not re.search(self._filter_query, row["path"], re.IGNORECASE):
-                        continue
-                except re.error:
-                    pass  # invalid regex — show all
+            if query and query not in row["path"].lower():
+                continue
             self._venv_display_indices.append(i)
             env = row["environment"]
             type_label = ("\u26a0\ufe0f " if env.is_system_critical else "") + row[

@@ -68,7 +68,7 @@ def filter_envs(
         names such as ``"venv"`` and ``"cache"`` are automatically expanded to
         their concrete sub-type values via :data:`_TYPE_ALIASES`.
     older_than:
-        If provided, only environments not accessed in the last *older_than* days
+        If provided, only environments not modified in the last *older_than* days
         are kept.
     """
     now = datetime.now(tz=timezone.utc)
@@ -84,6 +84,6 @@ def filter_envs(
 
     if older_than is not None:
         cutoff = now - timedelta(days=older_than)
-        result = [e for e in result if e.last_accessed < cutoff]
+        result = [e for e in result if e.last_modified < cutoff]
 
     return result

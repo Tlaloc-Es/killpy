@@ -28,7 +28,7 @@ def _env(path: Path | None = None, env_type: str = "venv") -> Environment:
         path=path or Path("/fake/myenv"),
         name="myenv",
         type=env_type,
-        last_accessed=datetime(2024, 3, 15, tzinfo=timezone.utc),
+        last_modified=datetime(2024, 3, 15, tzinfo=timezone.utc),
         size_bytes=1024,
     )
 

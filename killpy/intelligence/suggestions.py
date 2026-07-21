@@ -9,8 +9,9 @@ from killpy.models import ScoredEnvironment, Suggestion
 
 # Age thresholds in days.
 _HIGH_AGE_ORPHAN_THRESHOLD = 180  # orphan + age >= this → HIGH
-_MEDIUM_AGE_THRESHOLD = 120  # age >= this → MEDIUM
-_LOW_AGE_THRESHOLD = 120  # age < this → LOW
+# Single LOW/MEDIUM cutoff: age < this → LOW (recently modified), age >= this →
+# MEDIUM (stale). Active git always forces LOW regardless of age.
+_STALE_AGE_THRESHOLD = 120
 
 _ACTION_HIGH = "Delete — unused and orphaned"
 _ACTION_MEDIUM = "Review — possibly unused"
@@ -59,8 +60,8 @@ class SuggestionEngine:
 
     @staticmethod
     def _age_days(scored: ScoredEnvironment) -> int:
-        """Return age in days based on env.last_accessed."""
-        la = scored.env.last_accessed
+        """Return age in days based on env.last_modified."""
+        la = scored.env.last_modified
         if la.tzinfo is None:
             la = la.replace(tzinfo=timezone.utc)
         return max(0, (datetime.now(tz=timezone.utc) - la).days)
@@ -81,32 +82,27 @@ class SuggestionEngine:
         # ── Rule 1: HIGH — orphan and stale ────────────────────────────────────
         if is_orphan and age_days >= _HIGH_AGE_ORPHAN_THRESHOLD:
             reasons.append("Orphan — no project files found nearby")
-            reasons.append(f"Not used in {age_days} days")
+            reasons.append(f"Not modified in {age_days} days")
             return "HIGH", _ACTION_HIGH
 
         # ── Rule 2: LOW — active git or very recent ─────────────────────────────
-        if is_active_git or age_days < _LOW_AGE_THRESHOLD:
+        if is_active_git or age_days < _STALE_AGE_THRESHOLD:
             if is_active_git:
                 reasons.append("Active git repository")
-            if age_days < _LOW_AGE_THRESHOLD:
-                reasons.append(f"Recently used ({age_days} days ago)")
+            if age_days < _STALE_AGE_THRESHOLD:
+                reasons.append(f"Recently modified ({age_days} days ago)")
             action = _ACTION_LOW_ACTIVE if is_active_git else _ACTION_LOW
             return "LOW", action
 
-        # ── Rule 3: MEDIUM — moderately old ────────────────────────────────────
-        if age_days >= _MEDIUM_AGE_THRESHOLD:
-            if is_orphan:
-                reasons.append("Orphan — no project files found nearby")
-            reasons.append(f"Not used in {age_days} days")
-            if (
-                scored.git_info is not None
-                and scored.git_info.is_git_repo
-                and not scored.git_info.is_active
-            ):
-                reasons.append("Associated git repo has no recent commits")
-            return "MEDIUM", _ACTION_MEDIUM
-
-        # ── Rule 4: FALLBACK → LOW ──────────────────────────────────────────────
-        if is_active_git:
-            reasons.append("Active git repository")
-        return "LOW", _ACTION_LOW
+        # ── Rule 3: MEDIUM — stale (not active, age >= _STALE_AGE_THRESHOLD) ────
+        # Exhaustive fallback: everything not caught by Rules 1–2 is stale.
+        if is_orphan:
+            reasons.append("Orphan — no project files found nearby")
+        reasons.append(f"Not modified in {age_days} days")
+        if (
+            scored.git_info is not None
+            and scored.git_info.is_git_repo
+            and not scored.git_info.is_active
+        ):
+            reasons.append("Associated git repo has no recent commits")
+        return "MEDIUM", _ACTION_MEDIUM

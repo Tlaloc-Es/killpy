@@ -81,7 +81,7 @@ class UvDetector(AbstractDetector):
                             path=env_dir,
                             name=env_dir.name,
                             type="uv",
-                            last_accessed=mtime,
+                            last_modified=mtime,
                             size_bytes=size,
                             managed_by=managed_by,
                         )

@@ -73,7 +73,7 @@ class HatchDetector(AbstractDetector):
                                 path=env_dir,
                                 name=f"{project_dir.name}/{env_dir.name}",
                                 type="hatch",
-                                last_accessed=mtime,
+                                last_modified=mtime,
                                 size_bytes=size,
                             )
                         )

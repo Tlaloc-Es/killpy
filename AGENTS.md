@@ -122,9 +122,9 @@ See `docs/user-guide/cli.md` for the authoritative, detailed reference.
 
 The shared contract is the `Environment` dataclass (`models.py`), not tuples:
 
-- `path: Path`, `name: str`, `type: str`, `last_accessed: datetime`,
+- `path: Path`, `name: str`, `type: str`, `last_modified: datetime`,
   `size_bytes: int`, `managed_by: str | None`, `is_system_critical: bool`
-- `size_human` and `last_accessed_str` are computed `@property` values;
+- `size_human` and `last_modified_str` are computed `@property` values;
   `to_dict()` produces the JSON contract used by `list`/`find`/`doctor --json`.
 
 The TUI (`cli.py`) stores rows as `VenvRow` / `PipxRow` `TypedDict`s at render

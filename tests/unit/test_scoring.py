@@ -17,13 +17,13 @@ def _env(
     path: Path | None = None,
     name: str = "test-env",
     size: int = 100 * 1024 * 1024,  # 100 MB
-    last_accessed: datetime | None = None,
+    last_modified: datetime | None = None,
 ) -> Environment:
     return Environment(
         path=path or Path("/fake/test-env"),
         name=name,
         type="venv",
-        last_accessed=last_accessed or datetime(2023, 1, 1, tzinfo=timezone.utc),
+        last_modified=last_modified or datetime(2023, 1, 1, tzinfo=timezone.utc),
         size_bytes=size,
         managed_by=None,
     )
@@ -63,21 +63,21 @@ class TestNormalizeSize:
 
 
 class TestNormalizeAge:
-    def test_just_accessed_gives_zero(self) -> None:
-        la = datetime.now(tz=timezone.utc)
-        score, days = ScoringService._normalize_age(la)
+    def test_just_modified_gives_zero(self) -> None:
+        lm = datetime.now(tz=timezone.utc)
+        score, days = ScoringService._normalize_age(lm)
         assert score < 0.01
         assert days == 0
 
     def test_365_days_gives_one(self) -> None:
-        la = datetime.now(tz=timezone.utc) - timedelta(days=365)
-        score, days = ScoringService._normalize_age(la)
+        lm = datetime.now(tz=timezone.utc) - timedelta(days=365)
+        score, days = ScoringService._normalize_age(lm)
         assert abs(score - 1.0) < 0.01
         assert days == 365
 
     def test_beyond_365_caps_at_one(self) -> None:
-        la = datetime.now(tz=timezone.utc) - timedelta(days=800)
-        score, _ = ScoringService._normalize_age(la)
+        lm = datetime.now(tz=timezone.utc) - timedelta(days=800)
+        score, _ = ScoringService._normalize_age(lm)
         assert score == 1.0
 
 
@@ -186,7 +186,7 @@ class TestScoreAll:
         tiny_new = _env(
             path=tmp_path / "b",
             size=1024,
-            last_accessed=datetime.now(tz=timezone.utc),
+            last_modified=datetime.now(tz=timezone.utc),
         )
         (tmp_path / "a").mkdir()
         (tmp_path / "b").mkdir()

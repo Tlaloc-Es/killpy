@@ -153,8 +153,7 @@ The category is assigned deterministically by evaluating rules in order:
 |----------|-----------|----------|
 | 1 | `is_orphan == True` **and** `age ≥ 180 days` | `HIGH` |
 | 2 | `git.is_active == True` **or** `age < 120 days` | `LOW` |
-| 3 | `age ≥ 120 days` | `MEDIUM` |
-| 4 | *(fallback)* | `LOW` |
+| 3 | `age ≥ 120 days` *(exhaustive fallback)* | `MEDIUM` |
 
 Age and orphan status dominate. Size has **no effect** on the category.
 
@@ -170,7 +169,7 @@ Environments are classified into three categories:
 |----------|---------|
 | `HIGH` | Delete — unused and orphaned (age + orphan status dominate). |
 | `MEDIUM` | Review — possibly unused (moderately stale, no strong active signal). |
-| `LOW` | Keep — actively used or recently accessed. |
+| `LOW` | Keep — active git repo or recently modified. |
 
 ### Default output
 

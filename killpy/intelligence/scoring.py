@@ -69,8 +69,8 @@ class ScoringService:
         size_score = self._normalize_size(env.size_bytes)
         explanation.append(f"Size: {env.size_human}")
 
-        age_score, age_days = self._normalize_age(env.last_accessed)
-        explanation.append(f"Last accessed {age_days} days ago")
+        age_score, age_days = self._normalize_age(env.last_modified)
+        explanation.append(f"Last modified {age_days} days ago")
 
         is_orphan, orphan_score = self._orphan_score(env.path)
         has_project_files = not is_orphan
@@ -132,11 +132,11 @@ class ScoringService:
         return 1.0 / (1.0 + math.exp(-k * (size_bytes - x0)))
 
     @staticmethod
-    def _normalize_age(last_accessed: datetime) -> tuple[float, int]:
+    def _normalize_age(last_modified: datetime) -> tuple[float, int]:
         """Return (age_score, age_days) where age_score is linear [0, 1]."""
         now = datetime.now(tz=timezone.utc)
         try:
-            la = last_accessed
+            la = last_modified
             if la.tzinfo is None:
                 la = la.replace(tzinfo=timezone.utc)
             age_days = max(0, (now - la).days)
