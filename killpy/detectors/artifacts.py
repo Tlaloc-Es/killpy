@@ -7,17 +7,19 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from killpy.detectors.base import AbstractDetector
+from killpy.detectors.base import (
+    ENV_INTERNAL_DIRS,
+    VCS_PRUNE_DIRS,
+    AbstractDetector,
+)
 from killpy.files import get_total_size
 from killpy.models import Environment
 
 logger = logging.getLogger(__name__)
 
-_PRUNED: frozenset[str] = frozenset({".git", ".hg", ".svn", "node_modules"})
-# Environment internals are not build artifacts: every installed package has
-# a ``site-packages/*.dist-info`` directory whose deletion corrupts the env.
-# Environments are VenvDetector territory.
-_ENV_DIRS: frozenset[str] = frozenset({".venv", "site-packages"})
+# Environment internals (``ENV_INTERNAL_DIRS``) are not build artifacts: every
+# installed package has a ``site-packages/*.dist-info`` directory whose
+# deletion corrupts the env.  Environments are VenvDetector territory.
 _EXACT_NAMES: frozenset[str] = frozenset({"dist", "build"})
 _SUFFIXES: tuple[str, ...] = (".egg-info", ".dist-info")
 
@@ -39,9 +41,7 @@ class ArtifactsDetector(AbstractDetector):
     """
 
     name = "artifacts"
-
-    def can_handle(self) -> bool:
-        return True  # pure filesystem walk
+    always_available = True  # pure filesystem walk
 
     def detect(self, path: Path) -> list[Environment]:
         envs: list[Environment] = []
@@ -52,7 +52,7 @@ class ArtifactsDetector(AbstractDetector):
                 continue
             pruned = set()
             for d in directories:
-                if d in _PRUNED or d in _ENV_DIRS:
+                if d in VCS_PRUNE_DIRS or d in ENV_INTERNAL_DIRS:
                     pruned.add(d)
                     continue
                 if _is_artifact_dir(d):

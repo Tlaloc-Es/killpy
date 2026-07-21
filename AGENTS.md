@@ -23,7 +23,7 @@ Help users reclaim disk space safely by surfacing Python environments with size 
 
 ## Tech Stack
 
-- Python `>=3.12`
+- Python `>=3.10` (CI/classifiers cover 3.10–3.13; ruff targets `py310`)
 - `click` for CLI command routing
 - `textual` for interactive terminal UI
 - `rich` as a dependency used by Textual ecosystem and terminal rendering
@@ -53,15 +53,23 @@ Top-level:
 
 Package layout (`killpy/`):
 
-- `__main__.py` — CLI entrypoint (`killpy` script); registers all subcommands
+- `__main__.py` — CLI entrypoint (`killpy` script); the `cli` click group,
+  the `--delete-all` fast path, and subcommand registration
 - `cli.py` — Textual app (`TableApp`) and interactive actions
-- `models.py` — `Environment` dataclass (shared contract between all layers)
+- `models.py` — shared dataclasses: `Environment` (core contract), plus
+  `GitInfo`, `ScoredEnvironment`, `Suggestion`, `ScanRecord`
 - `scanner.py` — `Scanner`: orchestrates detectors, deduplicates results
-- `cleaner.py` — `Cleaner`: handles deletion (shutil.rmtree or pipx uninstall)
+- `cleaner.py` — `Cleaner`: deletion via `shutil.rmtree`, `conda env remove`,
+  `pipx uninstall`, or `uv tool uninstall` (routed by `Environment.managed_by`)
 - `commands/clean.py` — `killpy clean` subcommand
 - `commands/delete.py` — `killpy delete` subcommand
 - `commands/list.py` — `killpy list` subcommand
 - `commands/stats.py` — `killpy stats` subcommand
+- `commands/doctor.py` — `killpy doctor` subcommand (health report + scoring)
+- `commands/find.py` — `killpy find` subcommand (locate a package across envs)
+- `commands/_utils.py` — shared command helpers (`filter_envs`, `partition_in_use`)
+- `intelligence/` — scoring layer: `git_analyzer.py`, `scoring.py`,
+  `suggestions.py`, `tracker.py` (scan-history persistence)
 - `cleaners/__init__.py` — `remove_pycache` helper
 - `files/__init__.py` — file-size helpers (`get_total_size`, `format_size`)
 - `detectors/` — one detector class per environment type:
@@ -95,30 +103,40 @@ Recent behavior to preserve:
 
 ## CLI Surface
 
-Main command:
+Root command (launches the TUI, or scans-and-deletes with `--delete-all`):
 
-- `killpy`
-- `killpy --path /some/folder`
+- `killpy [--path DIR] [--exclude/-E PATTERNS] [--delete-all/-D] [--yes/-y] [--force]`
 
-Subcommand:
+Subcommands (registered in `__main__.py`):
 
-- `killpy clean`
-- `killpy clean --path /some/folder`
+- `killpy clean [--path DIR]` — remove `__pycache__` directories
+- `killpy list [--path DIR] [--type TYPE]... [--older-than DAYS] [--json|--json-stream] [--quiet/-q]`
+- `killpy delete [--path DIR] [--type TYPE]... [--older-than DAYS] [--dry-run] [--yes/-y] [--force]`
+- `killpy stats [--path DIR] [--json] [--history]`
+- `killpy doctor [--path DIR] [--json] [--all]`
+- `killpy find PACKAGE [--path DIR] [--type TYPE]... [--json]`
+
+See `docs/user-guide/cli.md` for the authoritative, detailed reference.
 
 ## Key Data Shapes
 
-Venv-like rows are expected as tuples:
+The shared contract is the `Environment` dataclass (`models.py`), not tuples:
 
-- `(path, type, last_modified, size_bytes, size_human)`
+- `path: Path`, `name: str`, `type: str`, `last_accessed: datetime`,
+  `size_bytes: int`, `managed_by: str | None`, `is_system_critical: bool`
+- `size_human` and `last_accessed_str` are computed `@property` values;
+  `to_dict()` produces the JSON contract used by `list`/`find`/`doctor --json`.
 
-Pipx rows are expected as tuples:
-
-- `(package_name, size_bytes, size_human)`
-
-The UI appends a status column at render-time.
+The TUI (`cli.py`) stores rows as `VenvRow` / `PipxRow` `TypedDict`s at render
+time (keys such as `path`, `type`, `size`, `size_human`, `health`, `status`,
+`environment`), built from `Environment` objects — these are a UI-layer detail,
+not the cross-layer contract.
 
 ## Conventions and Guardrails
 
+- **Read the internal reference docs first:** `dev-docs/CODING_CONVENTIONS.md`
+  (the rules this codebase follows), `dev-docs/ARCHITECTURE_ANALYSIS.md`
+  (layering + trade-offs), and `dev-docs/ADDING_A_DETECTOR.md` (detector guide).
 - Keep changes minimal and focused; avoid broad refactors.
 - Preserve keyboard bindings and existing interaction model unless explicitly requested.
 - Prefer instance-level mutable state in `TableApp` (avoid mutable class attributes).

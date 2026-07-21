@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import os
 import platform
-import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -42,9 +41,11 @@ class HatchDetector(AbstractDetector):
     """
 
     name = "hatch"
+    required_tool = "hatch"  # tool-or-directory contract
 
-    def can_handle(self) -> bool:
-        return shutil.which("hatch") is not None or _hatch_envs_root().exists()
+    def _candidate_dirs(self) -> tuple[Path, ...]:
+        # ...or its global environments directory exists.
+        return (_hatch_envs_root(),)
 
     def detect(self, path: Path) -> list[Environment]:  # noqa: ARG002
         envs_root = _hatch_envs_root()

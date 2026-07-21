@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import os
-import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -52,13 +51,11 @@ class UvDetector(AbstractDetector):
     """
 
     name = "uv"
+    required_tool = "uv"  # tool-or-directory contract
 
-    def can_handle(self) -> bool:
-        return (
-            shutil.which("uv") is not None
-            or _uv_tools_dir().exists()
-            or _uv_python_dir().exists()
-        )
+    def _candidate_dirs(self) -> tuple[Path, ...]:
+        # ...or one of its tool/python data directories exists.
+        return (_uv_tools_dir(), _uv_python_dir())
 
     def detect(self, path: Path) -> list[Environment]:  # noqa: ARG002
         envs: list[Environment] = []

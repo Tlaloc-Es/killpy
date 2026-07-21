@@ -46,8 +46,9 @@ class PoetryDetector(AbstractDetector):
 
     name = "poetry"
 
-    def can_handle(self) -> bool:
-        return _poetry_venvs_dir().exists()
+    def _candidate_dirs(self) -> tuple[Path, ...]:
+        # Contract: directory — applies only if Poetry's virtualenvs cache exists.
+        return (_poetry_venvs_dir(),)
 
     def detect(self, path: Path) -> list[Environment]:  # noqa: ARG002
         venvs_dir = _poetry_venvs_dir()

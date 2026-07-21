@@ -27,9 +27,11 @@ class Environment:
         environments (conda, pipx) this is the physical venv directory used
         for size calculation and display.
     name:
-        Human-readable name.  For filesystem envs this defaults to the last
-        two parts of *path*; for named envs (conda, pipx) it is the package /
-        environment name.
+        Human-readable name.  Filesystem-walk detectors (venv, cache, tox,
+        artifacts) store the full path string; global/tool detectors store a
+        short identifier: the directory basename (poetry, pyenv, pipenv, uv),
+        the managing tool's env/package name (conda, pipx), or
+        ``"<project>/<env>"`` (hatch).
     type:
         Short detector tag, e.g. ``"venv"``, ``"pyvenv.cfg"``, ``"poetry"``,
         ``"conda"``, ``"pipx"``, ``"cache"``, ``"uv"``, ``"artifacts"``…
@@ -130,6 +132,16 @@ class Suggestion:
     category: Literal["HIGH", "MEDIUM", "LOW"]
     reasons: list[str]
     recommended_action: str
+
+    def to_dict(self) -> dict:
+        """Return a JSON-serialisable representation."""
+        return {
+            "env_path": str(self.env_path),
+            "score": self.score,
+            "category": self.category,
+            "reasons": self.reasons,
+            "recommended_action": self.recommended_action,
+        }
 
 
 @dataclass

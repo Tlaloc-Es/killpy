@@ -1,3 +1,7 @@
+"""Interactive Textual TUI (``TableApp``) for browsing and deleting environments."""
+
+from __future__ import annotations
+
 import asyncio
 import re
 import subprocess
@@ -44,7 +48,7 @@ def _health_text(category: str) -> Text | str:
     return ""
 
 
-def is_venv_tab(func):
+def _is_venv_tab(func):
     def wrapper(self, *args, **kwargs):
         if self.query_one(TabbedContent).active == "venv-tab":
             return func(self, *args, **kwargs)
@@ -52,7 +56,7 @@ def is_venv_tab(func):
     return wrapper
 
 
-def is_pipx_tab(func):
+def _is_pipx_tab(func):
     def wrapper(self, *args, **kwargs):
         if self.query_one(TabbedContent).active == "pipx-tab":
             return func(self, *args, **kwargs)
@@ -60,7 +64,7 @@ def is_pipx_tab(func):
     return wrapper
 
 
-def shorten_path_for_table(path_value, max_parts: int = 2) -> str:
+def _shorten_path_for_table(path_value, max_parts: int = 2) -> str:
     path_text = str(path_value)
     if "/" not in path_text and "\\" not in path_text:
         return path_text
@@ -349,7 +353,7 @@ class TableApp(App):
             "type"
         ]
         table.add_row(
-            shorten_path_for_table(row["path"]),
+            _shorten_path_for_table(row["path"]),
             type_label,
             row["last_modified"],
             row["size"],
@@ -391,7 +395,7 @@ class TableApp(App):
                 "type"
             ]
             table.add_row(
-                shorten_path_for_table(row["path"]),
+                _shorten_path_for_table(row["path"]),
                 type_label,
                 row["last_modified"],
                 row["size"],
@@ -609,12 +613,16 @@ class TableApp(App):
             row["health"] = self._health_by_path.get(row["path"], "")
         self.render_venv_table()
 
-    async def action_clean_pycache(self):
-        total_freed_space = await asyncio.to_thread(remove_pycache, self.root_dir)
-        self.bytes_release += total_freed_space
+    def _show_bytes_released(self) -> None:
+        """Update the status label with the running total of freed space."""
         self.query_one("#status-label", Label).update(
             f"{format_size(self.bytes_release)} deleted"
         )
+
+    async def action_clean_pycache(self):
+        total_freed_space = await asyncio.to_thread(remove_pycache, self.root_dir)
+        self.bytes_release += total_freed_space
+        self._show_bytes_released()
         self.bell()
 
     def on_data_table_row_highlighted(self, event: DataTable.RowHighlighted) -> None:
@@ -633,7 +641,7 @@ class TableApp(App):
             _, row = resolved
             selected_path_label.update(f"Selected: {row['path']}")
 
-    @is_venv_tab
+    @_is_venv_tab
     def action_confirm_delete(self):
         freed_now = 0
         if self._multi_select_mode and self._selected_venv_paths:
@@ -662,12 +670,10 @@ class TableApp(App):
 
         self._record_deletion(freed_now)
         self.render_venv_table()
-        self.query_one("#status-label", Label).update(
-            f"{format_size(self.bytes_release)} deleted"
-        )
+        self._show_bytes_released()
         self.bell()
 
-    @is_venv_tab
+    @_is_venv_tab
     def action_mark_for_delete(self):
         table = self.query_one("#venv-table", DataTable)
 
@@ -690,7 +696,7 @@ class TableApp(App):
                     EnvStatus.MARKED_TO_DELETE.value,
                 )
 
-    @is_venv_tab
+    @_is_venv_tab
     def action_delete_now(self):
         table = self.query_one("#venv-table", DataTable)
         cursor_cell = table.cursor_coordinate
@@ -709,9 +715,7 @@ class TableApp(App):
                     (cursor_cell.row, self.VENV_COL_STATUS),
                     EnvStatus.DELETED.value,
                 )
-                self.query_one("#status-label", Label).update(
-                    f"{format_size(self.bytes_release)} deleted"
-                )
+                self._show_bytes_released()
         self.bell()
 
     def delete_environment(self, environment: Environment) -> bool:
@@ -729,7 +733,7 @@ class TableApp(App):
             self.query_one("#status-label", Label).update(str(error))
             return False
 
-    @is_pipx_tab
+    @_is_pipx_tab
     def action_uninstall_pipx(self):
         table = self.query_one("#pipx-table", DataTable)
         cursor_cell = table.cursor_coordinate
@@ -742,9 +746,7 @@ class TableApp(App):
                 table.update_cell_at((cursor_cell.row, 3), EnvStatus.DELETED.value)
                 self.bytes_release += int(row["size"])
                 self._record_deletion(int(row["size"]))
-                self.query_one("#status-label", Label).update(
-                    f"{format_size(self.bytes_release)} deleted"
-                )
+                self._show_bytes_released()
 
         self.bell()
 
@@ -772,7 +774,7 @@ class TableApp(App):
             tid = "#venv-table" if active == "venv-tab" else "#pipx-table"
             self.query_one(tid, DataTable).action_cursor_up()
 
-    @is_venv_tab
+    @_is_venv_tab
     def action_open_folder(self) -> None:
         """Open the parent directory of the selected environment in the OS file manager."""  # noqa: E501
         table = self.query_one("#venv-table", DataTable)
@@ -834,7 +836,7 @@ class TableApp(App):
         self._update_multi_select_label()
         self.render_venv_table()
 
-    @is_venv_tab
+    @_is_venv_tab
     def action_multi_select_toggle_row(self) -> None:
         """Toggle current row selection in multi-select mode (Space key)."""
         if not self._multi_select_mode:
@@ -859,7 +861,7 @@ class TableApp(App):
             self._compute_row_status(row),
         )
 
-    @is_venv_tab
+    @_is_venv_tab
     def action_multi_select_all(self) -> None:
         """Toggle select-all / deselect-all in multi-select mode (A key)."""
         if not self._multi_select_mode:

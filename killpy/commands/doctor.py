@@ -13,12 +13,13 @@ from rich.table import Table
 from killpy.detectors import ALL_DETECTORS
 from killpy.files import format_size
 from killpy.intelligence import SuggestionEngine, UsageTracker, score_all
-from killpy.models import Suggestion
+from killpy.models import ScoredEnvironment, Suggestion
 from killpy.scanner import Scanner
 
-# Environments smaller than this threshold are excluded from "wasted" totals.
+# HIGH-category environments below this size don't count toward "wasted" totals.
 _IMPACTFUL_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
-_SMALL_SIZE_BYTES = 1 * 1024 * 1024  # 1 MB (matches suggestions.py)
+# Environments below this size are reported as "ignored (too small to matter)".
+_SMALL_SIZE_BYTES = 1 * 1024 * 1024  # 1 MB
 
 _CATEGORY_STYLE = {
     "HIGH": "bold red",
@@ -78,7 +79,7 @@ def doctor_cmd(path: Path, as_json: bool, show_all: bool) -> None:
     suggestions = engine.classify_all(scored_envs)
 
     if as_json:
-        _output_json(suggestions, envs)
+        _output_json(suggestions, scored_envs)
         return
 
     _output_rich(console, suggestions, scored_envs, path, show_all=show_all)
@@ -89,39 +90,47 @@ def doctor_cmd(path: Path, as_json: bool, show_all: bool) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _output_json(suggestions: list[Suggestion], envs) -> None:  # type: ignore[type-arg]
-    total_size = sum(e.size_bytes for e in envs)
-    env_by_path = {e.path: e for e in envs}
-    high = [s for s in suggestions if s.category == "HIGH"]
+def _summarise(
+    suggestions: list[Suggestion],
+    scored_envs: list[ScoredEnvironment],
+) -> tuple[int, int, dict[str, int]]:
+    """Return ``(total_size_bytes, wasted_bytes, category_counts)``.
+
+    *wasted* sums the sizes of HIGH-category environments at or above
+    :data:`_IMPACTFUL_SIZE_BYTES`; *category_counts* maps each category to the
+    number of suggestions in it.  Computed once and shared by both output paths.
+    """
+    total_size = sum(se.env.size_bytes for se in scored_envs)
+    high_paths = {s.env_path for s in suggestions if s.category == "HIGH"}
     wasted = sum(
-        env_by_path[s.env_path].size_bytes
-        for s in high
-        if s.env_path in env_by_path
-        and env_by_path[s.env_path].size_bytes >= _IMPACTFUL_SIZE_BYTES
+        se.env.size_bytes
+        for se in scored_envs
+        if se.env.path in high_paths and se.env.size_bytes >= _IMPACTFUL_SIZE_BYTES
     )
-    ignored_small = sum(1 for e in envs if e.size_bytes < _SMALL_SIZE_BYTES)
+    counts = {
+        "HIGH": sum(1 for s in suggestions if s.category == "HIGH"),
+        "MEDIUM": sum(1 for s in suggestions if s.category == "MEDIUM"),
+        "LOW": sum(1 for s in suggestions if s.category == "LOW"),
+    }
+    return total_size, wasted, counts
+
+
+def _output_json(
+    suggestions: list[Suggestion], scored_envs: list[ScoredEnvironment]
+) -> None:
+    total_size, wasted, counts = _summarise(suggestions, scored_envs)
+    ignored_small = sum(
+        1 for se in scored_envs if se.env.size_bytes < _SMALL_SIZE_BYTES
+    )
     data = {
-        "total_environments": len(envs),
+        "total_environments": len(scored_envs),
         "total_size_bytes": total_size,
         "total_size_human": format_size(total_size),
         "wasted_size_bytes": wasted,
         "wasted_size_human": format_size(wasted),
         "ignored_small_envs_count": ignored_small,
-        "counts": {
-            "HIGH": sum(1 for s in suggestions if s.category == "HIGH"),
-            "MEDIUM": sum(1 for s in suggestions if s.category == "MEDIUM"),
-            "LOW": sum(1 for s in suggestions if s.category == "LOW"),
-        },
-        "suggestions": [
-            {
-                "env_path": str(s.env_path),
-                "score": s.score,
-                "category": s.category,
-                "reasons": s.reasons,
-                "recommended_action": s.recommended_action,
-            }
-            for s in suggestions
-        ],
+        "counts": counts,
+        "suggestions": [s.to_dict() for s in suggestions],
     }
     click.echo(json.dumps(data, indent=2))
 
@@ -129,19 +138,12 @@ def _output_json(suggestions: list[Suggestion], envs) -> None:  # type: ignore[t
 def _output_rich(
     console: Console,
     suggestions: list[Suggestion],
-    scored_envs,  # type: ignore[type-arg]
+    scored_envs: list[ScoredEnvironment],
     path: Path,
     *,
     show_all: bool = False,
 ) -> None:
-    total_size = sum(se.env.size_bytes for se in scored_envs)
-    high_suggestions = [s for s in suggestions if s.category == "HIGH"]
-    high_paths = {s.env_path for s in high_suggestions}
-    wasted = sum(
-        se.env.size_bytes
-        for se in scored_envs
-        if se.env.path in high_paths and se.env.size_bytes >= _IMPACTFUL_SIZE_BYTES
-    )
+    total_size, wasted, counts = _summarise(suggestions, scored_envs)
 
     console.print()
     console.rule("[bold cyan]Environment Health Report[/bold cyan]")
@@ -153,11 +155,6 @@ def _output_rich(
     )
 
     # Category summary
-    counts = {
-        "HIGH": sum(1 for s in suggestions if s.category == "HIGH"),
-        "MEDIUM": sum(1 for s in suggestions if s.category == "MEDIUM"),
-        "LOW": sum(1 for s in suggestions if s.category == "LOW"),
-    }
     console.print(
         f"  [bold red]HIGH[/bold red] (safe to delete): {counts['HIGH']}  "
         f"[bold yellow]MEDIUM[/bold yellow] (review): {counts['MEDIUM']}  "

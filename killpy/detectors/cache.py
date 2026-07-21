@@ -17,7 +17,11 @@ import platform
 from datetime import datetime, timezone
 from pathlib import Path
 
-from killpy.detectors.base import AbstractDetector
+from killpy.detectors.base import (
+    ENV_INTERNAL_DIRS,
+    VCS_PRUNE_DIRS,
+    AbstractDetector,
+)
 from killpy.files import get_total_size
 from killpy.models import Environment
 
@@ -31,13 +35,9 @@ _LOCAL_CACHE_DIRS: tuple[str, ...] = (
     ".ruff_cache",
 )
 
-# Directories to prune from the walk so we don't descend into them.
-_PRUNED: frozenset[str] = frozenset({".git", ".hg", ".svn", "node_modules"})
-
-# Caches inside an environment belong to the environment: VenvDetector
-# already reports the whole tree, so listing them separately double-counts
-# their size in stats/list totals.
-_ENV_DIRS: frozenset[str] = frozenset({".venv", "site-packages"})
+# Caches inside an environment (``ENV_INTERNAL_DIRS``) belong to the
+# environment: VenvDetector already reports the whole tree, so listing them
+# separately would double-count their size in stats/list totals.
 
 
 def _pip_cache_dir() -> Path:
@@ -71,9 +71,7 @@ class CacheDetector(AbstractDetector):
     """Detects local and global Python cache directories."""
 
     name = "cache"
-
-    def can_handle(self) -> bool:
-        return True
+    always_available = True  # pure filesystem walk
 
     def detect(self, path: Path) -> list[Environment]:
         envs: list[Environment] = []
@@ -95,10 +93,10 @@ class CacheDetector(AbstractDetector):
                 # Inside a virtual environment (whatever its name) — skip it.
                 directories[:] = []
                 continue
-            prune = set()
+            pruned = set()
             for d in directories:
-                if d in _PRUNED or d in _ENV_DIRS:
-                    prune.add(d)
+                if d in VCS_PRUNE_DIRS or d in ENV_INTERNAL_DIRS:
+                    pruned.add(d)
                     continue
                 if d in _LOCAL_CACHE_DIRS:
                     cache_path = Path(current_root) / d
@@ -107,8 +105,8 @@ class CacheDetector(AbstractDetector):
                         results.append(env)
                     except (FileNotFoundError, OSError) as exc:
                         logger.debug("Skipping %s: %s", cache_path, exc)
-                    prune.add(d)  # don't recurse inside cache dirs
-            directories[:] = [d for d in directories if d not in prune]
+                    pruned.add(d)  # don't recurse inside cache dirs
+            directories[:] = [d for d in directories if d not in pruned]
         return results
 
     def _scan_global(self, root: Path) -> list[Environment]:
@@ -141,13 +139,13 @@ class CacheDetector(AbstractDetector):
         return results
 
 
-def _make_cache_env(p: Path, tag: str) -> Environment:
-    stat = p.stat()
-    size = get_total_size(p)
+def _make_cache_env(cache_path: Path, tag: str) -> Environment:
+    stat = cache_path.stat()
+    size = get_total_size(cache_path)
     mtime = datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc)
     return Environment(
-        path=p,
-        name=str(p),
+        path=cache_path,
+        name=str(cache_path),
         type=tag,
         last_accessed=mtime,
         size_bytes=size,

@@ -6,7 +6,6 @@ import json
 import logging
 import os
 import platform
-import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -82,9 +81,7 @@ class PipxDetector(AbstractDetector):
     """
 
     name = "pipx"
-
-    def can_handle(self) -> bool:
-        return shutil.which("pipx") is not None
+    required_tool = "pipx"  # needs the pipx CLI on PATH
 
     def detect(self, path: Path) -> list[Environment]:  # noqa: ARG002
         try:

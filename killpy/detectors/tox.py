@@ -7,29 +7,25 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from killpy.detectors.base import AbstractDetector
+from killpy.detectors.base import VCS_PRUNE_DIRS, AbstractDetector
 from killpy.files import get_total_size
 from killpy.models import Environment
 
 logger = logging.getLogger(__name__)
-
-_PRUNED: frozenset[str] = frozenset({".git", ".hg", ".svn", "node_modules"})
 
 
 class ToxDetector(AbstractDetector):
     """Detects ``.tox`` directories created by tox test automation."""
 
     name = "tox"
-
-    def can_handle(self) -> bool:
-        return True  # pure filesystem walk
+    always_available = True  # pure filesystem walk
 
     def detect(self, path: Path) -> list[Environment]:
         envs: list[Environment] = []
         for current_root, directories, _ in os.walk(path, topdown=True):
             pruned = set()
             for d in directories:
-                if d in _PRUNED:
+                if d in VCS_PRUNE_DIRS:
                     pruned.add(d)
                     continue
                 if d == ".tox":

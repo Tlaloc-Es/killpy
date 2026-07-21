@@ -77,15 +77,21 @@ class GitAnalyzer:
             return None
 
     @staticmethod
+    def _is_recent(commit: datetime | None, threshold_days: int) -> bool:
+        """Return ``True`` when *commit* is within *threshold_days* of now."""
+        if commit is None:
+            return False
+        age_days = (datetime.now(tz=timezone.utc) - commit).days
+        return age_days < threshold_days
+
+    @staticmethod
     def is_active_repo(
         repo_root: Path, threshold_days: int = _ACTIVE_THRESHOLD_DAYS
     ) -> bool:
         """Return ``True`` when the repo had a commit within *threshold_days*."""
-        last = GitAnalyzer.get_last_commit(repo_root)
-        if last is None:
-            return False
-        age_days = (datetime.now(tz=timezone.utc) - last).days
-        return age_days < threshold_days
+        return GitAnalyzer._is_recent(
+            GitAnalyzer.get_last_commit(repo_root), threshold_days
+        )
 
     # ------------------------------------------------------------------ #
     #  Public orchestrator                                                 #
@@ -106,10 +112,7 @@ class GitAnalyzer:
             return GitInfo(is_git_repo=False, is_active=False)
 
         last_commit = GitAnalyzer.get_last_commit(repo_root)
-        is_active = False
-        if last_commit is not None:
-            age_days = (datetime.now(tz=timezone.utc) - last_commit).days
-            is_active = age_days < _ACTIVE_THRESHOLD_DAYS
+        is_active = GitAnalyzer._is_recent(last_commit, _ACTIVE_THRESHOLD_DAYS)
 
         return GitInfo(
             is_git_repo=True,

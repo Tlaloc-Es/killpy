@@ -1,3 +1,7 @@
+"""killpy CLI entry point: the ``cli`` click group and its subcommands."""
+
+from __future__ import annotations
+
 import logging
 import sys
 from pathlib import Path
@@ -10,7 +14,7 @@ from rich.prompt import Confirm
 from killpy.cleaner import Cleaner, CleanerError
 from killpy.cli import TableApp
 from killpy.commands._utils import partition_in_use
-from killpy.commands.clean import clean
+from killpy.commands.clean import clean_cmd
 from killpy.commands.delete import delete_cmd
 from killpy.commands.doctor import doctor_cmd
 from killpy.commands.find import find_cmd
@@ -144,7 +148,7 @@ def cli(ctx, path: Path, exclude: str, delete_all: bool, yes: bool, force: bool)
             app.run()
 
 
-cli.add_command(clean)
+cli.add_command(clean_cmd, name="clean")
 cli.add_command(list_cmd, name="list")
 cli.add_command(delete_cmd, name="delete")
 cli.add_command(stats_cmd, name="stats")

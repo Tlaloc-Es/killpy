@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import os
 import platform
-import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -35,9 +34,11 @@ class PipenvDetector(AbstractDetector):
     """
 
     name = "pipenv"
+    required_tool = "pipenv"  # tool-or-directory contract
 
-    def can_handle(self) -> bool:
-        return shutil.which("pipenv") is not None or _pipenv_venvs_root().exists()
+    def _candidate_dirs(self) -> tuple[Path, ...]:
+        # ...or its global virtualenvs directory exists.
+        return (_pipenv_venvs_root(),)
 
     def detect(self, path: Path) -> list[Environment]:  # noqa: ARG002
         venvs_root = _pipenv_venvs_root()

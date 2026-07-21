@@ -42,8 +42,9 @@ class PyenvDetector(AbstractDetector):
 
     name = "pyenv"
 
-    def can_handle(self) -> bool:
-        return _pyenv_versions_root().exists()
+    def _candidate_dirs(self) -> tuple[Path, ...]:
+        # Contract: directory — applies only if pyenv's versions directory exists.
+        return (_pyenv_versions_root(),)
 
     def detect(self, path: Path) -> list[Environment]:  # noqa: ARG002
         versions_root = _pyenv_versions_root()

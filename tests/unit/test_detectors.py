@@ -10,7 +10,9 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
+from killpy.detectors import ALL_DETECTORS
 from killpy.detectors import venv as venv_mod
+from killpy.detectors.base import AbstractDetector
 from killpy.detectors.cache import CacheDetector
 from killpy.detectors.pyenv import PyenvDetector
 from killpy.detectors.venv import VenvDetector
@@ -217,3 +219,26 @@ class TestCacheDetector:
 
     def test_can_handle_always_true(self) -> None:
         assert CacheDetector().can_handle() is True
+
+
+class TestDetectorContract:
+    """Every detector must declare its can_handle() contract (see base.py)."""
+
+    def test_every_detector_declares_a_contract(self) -> None:
+        for cls in ALL_DETECTORS:
+            detector = cls()
+            # A detector may express its contract declaratively (the norm) or,
+            # for a check the three knobs can't express, override can_handle()
+            # as a documented exception (see dev-docs/ADDING_A_DETECTOR.md).
+            overrides_can_handle = cls.can_handle is not AbstractDetector.can_handle
+            declares = (
+                detector.always_available
+                or detector.required_tool is not None
+                or bool(detector._candidate_dirs())
+                or overrides_can_handle
+            )
+            assert declares, (
+                f"{cls.__name__} declares no can_handle contract: set "
+                "always_available, required_tool, override _candidate_dirs(), "
+                "or override can_handle() (documented exception)"
+            )

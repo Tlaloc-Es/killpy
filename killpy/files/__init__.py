@@ -1,3 +1,7 @@
+"""File-size helpers: recursive byte totals and human-readable formatting."""
+
+from __future__ import annotations
+
 import os
 from pathlib import Path
 
@@ -19,12 +23,13 @@ def get_total_size(path: Path) -> int:
     return total_size
 
 
-def format_size(size_in_bytes: int):
-    if size_in_bytes >= 1 << 30:
-        return f"{size_in_bytes / (1 << 30):.2f} GB"
-    elif size_in_bytes >= 1 << 20:
-        return f"{size_in_bytes / (1 << 20):.2f} MB"
-    elif size_in_bytes >= 1 << 10:
-        return f"{size_in_bytes / (1 << 10):.2f} KB"
+def format_size(size_bytes: int) -> str:
+    """Return *size_bytes* as a human-readable string (GB / MB / KB / bytes)."""
+    if size_bytes >= 1 << 30:
+        return f"{size_bytes / (1 << 30):.2f} GB"
+    elif size_bytes >= 1 << 20:
+        return f"{size_bytes / (1 << 20):.2f} MB"
+    elif size_bytes >= 1 << 10:
+        return f"{size_bytes / (1 << 10):.2f} KB"
     else:
-        return f"{size_in_bytes} bytes"
+        return f"{size_bytes} bytes"

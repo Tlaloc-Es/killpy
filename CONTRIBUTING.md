@@ -51,7 +51,9 @@ ______________________________________________________________________
 
 ## Adding a new detector
 
-Detectors live in `killpy/detectors/`. Each one inherits from `AbstractDetector` in `base.py`.
+Detectors live in `killpy/detectors/`. Each one inherits from `AbstractDetector`
+in `base.py`, declares its `can_handle()` contract as data (`required_tool` /
+`always_available` / `_candidate_dirs`), and implements `detect()`.
 
 ```python
 from killpy.detectors.base import AbstractDetector
@@ -59,13 +61,30 @@ from killpy.models import Environment
 
 class MyToolDetector(AbstractDetector):
     name = "mytool"
+    required_tool = "mytool"  # or always_available = True, or override _candidate_dirs()
 
     def detect(self, path: Path) -> list[Environment]:
         # return a list of Environment objects
         ...
 ```
 
-Then register it in `killpy/scanner.py` inside `_build_detectors()`.
+Then register it in `killpy/detectors/__init__.py` (import it, add it to
+`__all__` and to `ALL_DETECTORS`).
+
+**Full step-by-step guide:** [`dev-docs/ADDING_A_DETECTOR.md`](dev-docs/ADDING_A_DETECTOR.md).
+
+## Coding conventions & architecture
+
+Before making non-trivial changes, read the internal reference docs — they
+declare the conventions this codebase follows and why:
+
+- [`dev-docs/CODING_CONVENTIONS.md`](dev-docs/CODING_CONVENTIONS.md) — the rules
+  (naming, error handling, detectors, models, logging, …) with correct/avoid
+  examples and the tooling that enforces them.
+- [`dev-docs/ARCHITECTURE_ANALYSIS.md`](dev-docs/ARCHITECTURE_ANALYSIS.md) — a
+  diagnostic of the layering and known trade-offs.
+- [`dev-docs/ADDING_A_DETECTOR.md`](dev-docs/ADDING_A_DETECTOR.md) — the detector
+  cookbook.
 
 ______________________________________________________________________
 

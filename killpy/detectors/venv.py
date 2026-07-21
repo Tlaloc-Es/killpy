@@ -7,19 +7,18 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from killpy.detectors.base import AbstractDetector
+from killpy.detectors.base import VCS_PRUNE_DIRS, AbstractDetector
 from killpy.files import get_total_size
 from killpy.models import Environment
 
 logger = logging.getLogger(__name__)
 
-# Directory names that should never be walked into when scanning.
-_EXCLUDED_DIRS: frozenset[str] = frozenset(
+# Directory names that should never be walked into when looking for venvs.
+# Wider than ``VCS_PRUNE_DIRS`` (it also skips tox/nox/cache/build trees) but,
+# unlike the cache/artifact detectors, it must NOT exclude ``.venv`` /
+# ``site-packages`` — those are exactly what this detector is looking for.
+_EXCLUDED_DIRS: frozenset[str] = VCS_PRUNE_DIRS | frozenset(
     {
-        ".git",
-        ".hg",
-        ".svn",
-        "node_modules",
         ".tox",
         ".nox",
         ".mypy_cache",
@@ -57,12 +56,13 @@ class VenvDetector(AbstractDetector):
     """
 
     name = "venv"
-
-    def can_handle(self) -> bool:
-        # Always applicable – pure filesystem scan.
-        return True
+    always_available = True  # pure filesystem walk
 
     def detect(self, path: Path) -> list[Environment]:
+        # Inner dedup: the ".venv" scan and the pyvenv.cfg scan below can both
+        # reach the same directory (a ".venv" that also contains pyvenv.cfg).
+        # This local `seen` set collapses those; the Scanner deduplicates again
+        # across detectors, so both layers are intentional (see ARCH P5).
         seen: set[Path] = set()
         envs: list[Environment] = []
 

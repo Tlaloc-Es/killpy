@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -53,9 +52,7 @@ class CondaDetector(AbstractDetector):
     """
 
     name = "conda"
-
-    def can_handle(self) -> bool:
-        return shutil.which("conda") is not None
+    required_tool = "conda"  # needs the conda CLI on PATH
 
     def detect(self, path: Path) -> list[Environment]:  # noqa: ARG002
         try:

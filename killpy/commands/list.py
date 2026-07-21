@@ -11,6 +11,7 @@ from rich.table import Table
 
 from killpy.commands._utils import filter_envs
 from killpy.files import format_size
+from killpy.models import Environment
 from killpy.scanner import Scanner
 
 
@@ -38,7 +39,7 @@ def _run_json_stream(
 
 def _scan_with_progress(
     scanner: Scanner, path: Path, quiet: bool, stderr_console: Console
-):
+) -> list[Environment]:
     if quiet:
         return scanner.scan(path)
 
