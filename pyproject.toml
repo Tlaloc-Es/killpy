@@ -1,6 +1,6 @@
 [project]
 name = "killpy"
-version = "1.0.0"
+version = "1.0.1"
 description = "Find and delete unused Python environments (.venv, conda, poetry, pipenv, pipx, pyenv, uv) and caches to free disk space — from a fast terminal UI or a single CLI command."
 readme = "README.md"
 keywords = [

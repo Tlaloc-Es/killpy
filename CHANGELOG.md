@@ -1,3 +1,9 @@
+## 1.0.1 (2026-07-22)
+
+### Perf
+
+- **scanner**: one shared filesystem walk for venv/cache/artifacts/tox (GIT-2)
+
 ## 1.0.0 (2026-07-21)
 
 ### BREAKING CHANGE
