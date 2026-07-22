@@ -50,7 +50,6 @@ ______________________________________________________________________
 - [FAQ](#faq)
 - [Pre-commit hooks](#pre-commit-hooks)
 - [Safety](#safety)
-- [Roadmap](#roadmap)
 - [Contributing](#contributing)
 
 ______________________________________________________________________
@@ -616,21 +615,6 @@ ______________________________________________________________________
 
 ______________________________________________________________________
 
-## Roadmap
-
-- [ ] `--min-size` filter (`killpy list --min-size 500MB`)
-- [ ] `killpy list --sort size|date|name`
-- [ ] `killpy delete --interactive` — checkbox-style selector in the CLI
-- [ ] Shell completions (bash, zsh, fish)
-- [ ] Config file (`~/.config/killpy/config.toml`) for default scan path and ignored dirs
-- [ ] `killpy export` — save scan results to JSON/CSV for auditing
-- [ ] Windows support improvements (pyenv-win, conda on Windows PATH)
-- [ ] TUI: filter panel, live progress bar, confirmation dialog with total bytes before delete
-- [ ] Detect unused dependencies inside `pyproject.toml` / `requirements.txt`
-- [ ] Add environment reporting (Python version, installed packages, and versions) to better differentiate between virtual environments with different dependencies
-
-______________________________________________________________________
-
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide — setup, workflow, how to add a new detector, and GIF recording instructions.
@@ -676,4 +660,4 @@ ______________________________________________________________________
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=Tlaloc-Es/killpy&type=date&legend=bottom-right)](https://www.star-history.com/#Tlaloc-Es/killpy&type=date&legend=bottom-right)
+[![Star History Chart](https://api.star-history.com/svg?repos=Tlaloc-Es/killpy&type=Date)](https://star-history.com/#Tlaloc-Es/killpy&Date)
