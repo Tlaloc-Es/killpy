@@ -285,14 +285,18 @@ class TestDeleteFilters:
             _env(name="b", env_type="conda"),
         ]
         result = self._run_delete(["--type", "venv", "--yes"], envs)
-        # Only venv should be deleted; conda silently excluded
+        # Only the venv is deleted; the conda env is excluded by the type filter.
         assert result.exit_code == 0
+        assert "Deleted a" in result.output
+        assert "Deleted b" not in result.output
 
     def test_older_than_filter(self) -> None:
         old = _env(name="old", env_type="venv")
         # last_modified is datetime(2024, 3, 15, tzinfo=utc) — more than 30 days ago
         result = self._run_delete(["--older-than", "1", "--yes"], [old])
+        # The stale env passes the filter and is actually deleted.
         assert result.exit_code == 0
+        assert "Deleted old" in result.output
 
     def test_cleaner_error_shows_message_and_exits_nonzero(self) -> None:
         runner = CliRunner()
@@ -356,6 +360,7 @@ class TestHelpOutput:
         assert "delete" in result.output
         assert "stats" in result.output
         assert "clean" in result.output
+        assert "doctor" in result.output
 
     def test_list_help(self) -> None:
         runner = CliRunner()
@@ -376,12 +381,6 @@ class TestHelpOutput:
         result = runner.invoke(cli, ["stats", "--help"])
         assert result.exit_code == 0
         assert "--json" in result.output
-
-    def test_doctor_in_help(self) -> None:
-        runner = CliRunner()
-        result = runner.invoke(cli, ["--help"])
-        assert result.exit_code == 0
-        assert "doctor" in result.output
 
 
 # ---------------------------------------------------------------------------
@@ -435,11 +434,8 @@ class TestDoctorCommand:
     def test_rich_output_contains_health_header(self) -> None:
         envs = [_env(name="bigenv", size=500_000_000)]
         result = self._run([], envs=envs)
-        assert (
-            "Health" in result.output
-            or "Offender" in result.output
-            or "bigenv" in result.output
-        )
+        assert result.exit_code == 0
+        assert "Health" in result.output or "Offender" in result.output
 
     def test_doctor_help(self) -> None:
         runner = CliRunner()

@@ -139,6 +139,8 @@ class TestDoctorRichOutput:
         assert result.exit_code == 0
         assert "orphan_high" in result.output
         assert "recent_low" in result.output
+        # No MEDIUM env → its table (title "Review recommended") is never rendered.
+        assert "Review recommended" not in result.output
 
     def test_default_medium_only_recommendation(self) -> None:
         result = _run_doctor([], [_medium()])
@@ -240,7 +242,7 @@ class TestListStreamAndProgress:
         assert result.exit_code == 0
         assert len(self._ndjson_lines(result.output)) == 1
 
-    def test_progress_status_update_on_default_run(self) -> None:
+    def test_default_run_lists_env(self) -> None:
         envs = [_env("proj")]
         runner = CliRunner()
         with patch("killpy.commands.list.Scanner") as mock_cls:
@@ -249,7 +251,7 @@ class TestListStreamAndProgress:
         assert result.exit_code == 0
         assert "proj" in result.output
 
-    def test_quiet_non_stream_skips_progress(self) -> None:
+    def test_quiet_run_still_lists_env(self) -> None:
         envs = [_env("proj")]
         runner = CliRunner()
         with patch("killpy.commands.list.Scanner") as mock_cls:
@@ -267,4 +269,7 @@ class TestListStreamAndProgress:
 def test_analyze_environments_runs_full_pipeline() -> None:
     suggestions = analyze_environments([_env("x", age_days=400)], run_git=False)
     assert len(suggestions) == 1
-    assert suggestions[0].category in {"HIGH", "MEDIUM", "LOW"}
+    # A 400-day env with no active git is stale — never LOW — and the pipeline
+    # must yield an actionable recommendation.
+    assert suggestions[0].category in {"HIGH", "MEDIUM"}
+    assert suggestions[0].recommended_action

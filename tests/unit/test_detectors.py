@@ -49,6 +49,8 @@ class TestVenvDetector:
         _make_venv(tmp_path)
         detector = VenvDetector()
         envs = detector.detect(tmp_path)
+        # len == 1 also guards dedup: a .venv containing pyvenv.cfg is matched by
+        # both the ".venv"-name and pyvenv.cfg passes but must appear only once.
         assert len(envs) == 1
         # VenvDetector stores the full path string as name
         assert envs[0].path.name == ".venv"
@@ -64,15 +66,6 @@ class TestVenvDetector:
         # name stores full path; compare using path.name
         found_dir_names = {e.path.name for e in envs}
         assert "myenv" in found_dir_names
-
-    def test_deduplicates_when_venv_has_pyvenv_cfg(self, tmp_path: Path) -> None:
-        """A .venv dir that also contains pyvenv.cfg should appear once."""
-        _make_venv(tmp_path, ".venv")
-        detector = VenvDetector()
-        envs = detector.detect(tmp_path)
-        venv_paths = [e.path for e in envs]
-        # No duplicates
-        assert len(venv_paths) == len(set(venv_paths))
 
     def test_no_envs_in_empty_dir(self, tmp_path: Path) -> None:
         detector = VenvDetector()

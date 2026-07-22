@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -37,13 +38,20 @@ class TestGetTotalSize:
         (tmp_path / "top.txt").write_bytes(b"y" * 50)
         assert get_total_size(tmp_path) == 150
 
-    def test_handles_missing_file_gracefully(self, tmp_path: Path) -> None:
-        """Should not raise if a file disappears mid-scan."""
-        f = tmp_path / "ghost.txt"
-        f.write_bytes(b"x")
-        # Even if a file disappears, get_total_size should not raise
-        result = get_total_size(tmp_path)
-        assert isinstance(result, int)
+    def test_skips_files_that_vanish_mid_scan(self, tmp_path: Path) -> None:
+        """A file that vanishes between listing and stat is skipped, not raised on."""
+        (tmp_path / "ghost.txt").write_bytes(b"x" * 100)
+        (tmp_path / "real.txt").write_bytes(b"y" * 50)
+        real_lstat = os.lstat
+
+        def flaky_lstat(path, *args, **kwargs):
+            if str(path).endswith("ghost.txt"):
+                raise OSError("vanished")
+            return real_lstat(path, *args, **kwargs)
+
+        with patch("killpy.files.os.lstat", side_effect=flaky_lstat):
+            result = get_total_size(tmp_path)
+        assert result == 50  # ghost skipped (OSError), real.txt still counted
 
     def test_does_not_follow_directory_symlinks(self, tmp_path: Path) -> None:
         """A symlinked directory inside the tree must not pull in outside
@@ -166,17 +174,13 @@ class TestRemovePycache:
 
 
 class TestCleanCommand:
-    def test_clean_runs_without_error(self, tmp_path: Path) -> None:
-        runner = CliRunner()
-        result = runner.invoke(cli, ["clean", "--path", str(tmp_path)])
-        assert result.exit_code == 0
-
     def test_clean_actually_removes_pycache(self, tmp_path: Path) -> None:
         cache = tmp_path / "src" / "__pycache__"
         cache.mkdir(parents=True)
         (cache / "x.pyc").write_bytes(b"data")
         runner = CliRunner()
-        runner.invoke(cli, ["clean", "--path", str(tmp_path)])
+        result = runner.invoke(cli, ["clean", "--path", str(tmp_path)])
+        assert result.exit_code == 0
         assert not cache.exists()
 
     def test_clean_default_path(self) -> None:

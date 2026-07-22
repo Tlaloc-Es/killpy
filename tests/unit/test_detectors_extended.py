@@ -126,6 +126,7 @@ class TestCondaDetector:
         ):
             mock_run.return_value = MagicMock(returncode=0, stdout=output, stderr="")
             envs = CondaDetector().detect(tmp_path)
+        assert len(envs) == 1
         assert all(e.managed_by == "conda" for e in envs)
 
     def test_detects_env_with_spaces_in_path(self, tmp_path: Path) -> None:
@@ -340,6 +341,7 @@ class TestHatchDetector:
         self._make_hatch_tree(tmp_path)
         with patch("killpy.detectors.hatch._hatch_envs_root", return_value=tmp_path):
             envs = HatchDetector().detect(tmp_path)
+        assert len(envs) == 2
         assert all(e.type == "hatch" for e in envs)
 
     def test_skips_files_at_root_level(self, tmp_path: Path) -> None:
@@ -630,12 +632,10 @@ class TestCacheDetectorExtended:
         envs = CacheDetector()._scan_local(tmp_path)
         assert any(e.path.name == ".ruff_cache" for e in envs)
 
-    def test_scan_global_returns_existing_paths(self, tmp_path: Path) -> None:
+    def test_make_cache_env_builds_env_from_path(self, tmp_path: Path) -> None:
         fake_pip = tmp_path / "pip"
         fake_pip.mkdir()
-        with patch("killpy.detectors.cache.Path.home", return_value=tmp_path):
-            # Directly test _make_cache_env with our dir
-            env = _make_cache_env(fake_pip, "pip-cache")
+        env = _make_cache_env(fake_pip, "pip-cache")
         assert env.type == "pip-cache"
         assert env.path == fake_pip
 

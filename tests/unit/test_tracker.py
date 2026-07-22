@@ -138,10 +138,11 @@ class TestAtomicWrite:
         tracker.record_scan(_record())
         assert deep.exists()
 
-    def test_existing_file_is_replaced(self, tmp_path: Path) -> None:
+    def test_replace_leaves_no_temp_file_behind(self, tmp_path: Path) -> None:
         path = tmp_path / "history.json"
         tracker = UsageTracker(path)
         tracker.record_scan(_record(count=1))
         tracker.record_scan(_record(count=2))
-        history = tracker.get_history()
-        assert len(history) == 2
+        assert len(tracker.get_history()) == 2
+        # The atomic mkstemp + os.replace must not leave a temp file behind.
+        assert [p.name for p in tmp_path.iterdir()] == ["history.json"]

@@ -49,7 +49,8 @@ class TestGetLastCommit:
     def test_returns_none_on_non_zero_exit(self, tmp_path: Path) -> None:
         (tmp_path / ".git").mkdir()
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=1, stdout="")
+            # Valid stdout, so only the non-zero exit code can drive the None.
+            mock_run.return_value = MagicMock(returncode=1, stdout="1700000000\n")
             result = GitAnalyzer.get_last_commit(tmp_path)
         assert result is None
 
