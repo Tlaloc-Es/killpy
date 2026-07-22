@@ -21,7 +21,7 @@ keywords = [
     "developer-tools",
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Environment :: Console :: Curses",
     "Intended Audience :: Developers",
