@@ -75,6 +75,9 @@ package = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short --cov=killpy --cov-report=term-missing --cov-report=xml"
+markers = [
+    "integration: system-level end-to-end tests (real envs + real deletion); require KILLPY_INTEGRATION=1",
+]
 
 [tool.coverage.run]
 branch = true
@@ -102,6 +105,10 @@ cov = "coverage html"
 lint = "ruff check killpy tests"
 format = "ruff format killpy tests"
 type = "mypy killpy"
+
+[tool.poe.tasks.integration]
+cmd = "pytest -m integration --no-cov tests/integration"
+env = { KILLPY_INTEGRATION = "1" }
 
 [project.scripts]
 killpy = "killpy.__main__:cli"

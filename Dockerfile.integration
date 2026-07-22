@@ -1,0 +1,26 @@
+# Disposable image for killpy's system-level (E2E) tests.
+#
+# Installs killpy plus a few real Python tools, then runs the integration suite —
+# which builds genuine environments and ACTUALLY deletes them. That is safe here
+# precisely because the container is thrown away after the run.
+#
+#   docker build -f Dockerfile.integration -t killpy-it .
+#   docker run --rm killpy-it
+FROM python:3.12-slim
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    KILLPY_INTEGRATION=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY . /app
+
+# killpy itself, the test runner (pytest-cov satisfies the repo's --cov addopts),
+# and a few real tools the detectors know about.
+RUN pip install . pytest pytest-cov pipx tox uv
+
+CMD ["pytest", "-m", "integration", "--no-cov", "-v", "tests/integration"]

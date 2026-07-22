@@ -1,0 +1,23 @@
+# System-level end-to-end tests: build real environments and actually delete
+# them inside the disposable GitHub runner. Kept separate from the fast unit
+# suite (test.yml) and manual-only for now — flip on `pull_request` once it is
+# proven stable.
+name: integration
+
+on:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Install project
+        run: uv sync
+      - name: Run system-level tests
+        env:
+          KILLPY_INTEGRATION: "1"
+        run: uv run pytest -m integration --no-cov -v tests/integration
