@@ -72,12 +72,17 @@ class CacheDetector(AbstractDetector):
 
     name = "cache"
     always_available = True  # pure filesystem walk
+    shared_walk = True  # local tree scan served by killpy.detectors._shared_walk
 
     def detect(self, path: Path) -> list[Environment]:
         envs: list[Environment] = []
         envs.extend(self._scan_local(path))
         envs.extend(self._scan_global(path))
         return envs
+
+    def scan_global(self, path: Path) -> list[Environment]:
+        """Global pip/uv caches — the part not covered by the shared tree walk."""
+        return self._scan_global(path)
 
     # ------------------------------------------------------------------ #
 

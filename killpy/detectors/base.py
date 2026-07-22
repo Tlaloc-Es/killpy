@@ -62,6 +62,11 @@ class AbstractDetector(ABC):
     required_tool: ClassVar[str | None] = None
     #: ``True`` for detectors that always apply (pure filesystem walks).
     always_available: ClassVar[bool] = False
+    #: ``True`` when this detector's tree scan is served by the single shared
+    #: walk (``killpy.detectors._shared_walk``) instead of its own ``os.walk``.
+    #: The :class:`~killpy.scanner.Scanner` batches all such detectors into one
+    #: traversal; ``detect`` is kept for direct use and tests.
+    shared_walk: ClassVar[bool] = False
 
     @abstractmethod
     def detect(self, path: Path) -> list[Environment]:
@@ -77,6 +82,15 @@ class AbstractDetector(ABC):
             may ignore this argument; local detectors (venv, tox …) should
             use it as the walk root.
         """
+
+    def scan_global(self, path: Path) -> list[Environment]:
+        """Environments found outside the shared tree walk (e.g. global caches).
+
+        Empty by default; :class:`~killpy.detectors.cache.CacheDetector` overrides
+        it to report the global pip/uv caches.  Called by the Scanner only for
+        detectors with ``shared_walk = True``.
+        """
+        return []
 
     def _candidate_dirs(self) -> tuple[Path, ...]:
         """Directories whose existence makes this detector applicable.

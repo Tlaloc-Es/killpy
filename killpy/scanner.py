@@ -22,6 +22,7 @@ from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 
 from killpy.detectors import ALL_DETECTORS, AbstractDetector
+from killpy.detectors._shared_walk import TYPE_TO_DETECTOR, walk_environments
 from killpy.detectors.pyenv import _pyenv_root
 from killpy.models import Environment
 
@@ -85,24 +86,28 @@ class Scanner:
         seen: set[Path] = set()
         results: list[Environment] = []
 
-        for detector in self._detectors:
-            if not detector.can_handle():
-                logger.debug("Skipping %s (can_handle=False)", detector.name)
-                continue
+        applicable = [d for d in self._detectors if d.can_handle()]
+        shared = [d for d in applicable if d.shared_walk]
+        others = [d for d in applicable if not d.shared_walk]
+
+        # One traversal shared by every filesystem-walking detector.
+        for detector, found in self._shared_walk_groups(shared, path):
+            processed = self._process(found, seen)
+            results.extend(processed)
+            if on_progress is not None:
+                on_progress(detector, processed)
+
+        # The remaining detectors scan their own global directories.
+        for detector in others:
             try:
                 found = detector.detect(path)
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Detector %s raised: %s", detector.name, exc)
                 found = []
-
-            deduped = self._deduplicate(found, seen)
-            deduped = self._apply_exclusions(deduped)
-            for env in deduped:
-                self._mark_system_critical(env)
-            results.extend(deduped)
-
+            processed = self._process(found, seen)
+            results.extend(processed)
             if on_progress is not None:
-                on_progress(detector, deduped)
+                on_progress(detector, processed)
 
         results.sort(key=lambda e: e.size_bytes, reverse=True)
         return results
@@ -123,27 +128,69 @@ class Scanner:
                     table.add_row(env)
         """
         applicable = [d for d in self._detectors if d.can_handle()]
+        shared = [d for d in applicable if d.shared_walk]
+        others = [d for d in applicable if not d.shared_walk]
         seen: set[Path] = set()
 
-        async def _run(detector: AbstractDetector):
+        async def _run_shared() -> list[tuple[AbstractDetector, list[Environment]]]:
             try:
-                return detector, await asyncio.to_thread(detector.detect, path)
+                return await asyncio.to_thread(self._shared_walk_groups, shared, path)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Shared walk raised: %s", exc)
+                return [(d, []) for d in shared]
+
+        async def _run_one(
+            detector: AbstractDetector,
+        ) -> list[tuple[AbstractDetector, list[Environment]]]:
+            try:
+                return [(detector, await asyncio.to_thread(detector.detect, path))]
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Detector %s raised: %s", detector.name, exc)
-                return detector, []
+                return [(detector, [])]
 
-        tasks = [asyncio.create_task(_run(d)) for d in applicable]
+        tasks = [asyncio.create_task(_run_one(d)) for d in others]
+        if shared:
+            tasks.append(asyncio.create_task(_run_shared()))
+
         for coro in asyncio.as_completed(tasks):
-            detector, found = await coro
-            deduped = self._deduplicate(found, seen)
-            deduped = self._apply_exclusions(deduped)
-            for env in deduped:
-                self._mark_system_critical(env)
-            yield detector, deduped
+            for detector, found in await coro:
+                deduped = self._process(found, seen)
+                yield detector, deduped
 
     # ------------------------------------------------------------------ #
     #  Helpers                                                             #
     # ------------------------------------------------------------------ #
+
+    def _shared_walk_groups(
+        self, shared: list[AbstractDetector], path: Path
+    ) -> list[tuple[AbstractDetector, list[Environment]]]:
+        """Run the one shared walk, returning ``(detector, envs)`` per detector.
+
+        The local tree is walked once for the union of *shared* detector names;
+        each detector also contributes its own global scan (pip/uv caches).
+        Results are grouped back per detector via :data:`TYPE_TO_DETECTOR` so the
+        per-detector progress contract is preserved.
+        """
+        if not shared:
+            return []
+        active = {d.name for d in shared}
+        found = walk_environments(path, active)
+        for detector in shared:
+            found.extend(detector.scan_global(path))
+        by_name: dict[str, list[Environment]] = {d.name: [] for d in shared}
+        for env in found:
+            name = TYPE_TO_DETECTOR.get(env.type)
+            if name in by_name:
+                by_name[name].append(env)
+        return [(d, by_name[d.name]) for d in shared]
+
+    def _process(self, found: list[Environment], seen: set[Path]) -> list[Environment]:
+        """Deduplicate, apply exclusions, and flag system-critical envs."""
+        deduped = self._deduplicate(found, seen)
+        deduped = self._apply_exclusions(deduped)
+        for env in deduped:
+            self._mark_system_critical(env)
+        return deduped
 
     @staticmethod
     def _deduplicate(envs: list[Environment], seen: set[Path]) -> list[Environment]:

@@ -39,6 +39,8 @@ def _stub_detector(
     d.name = name
     d.can_handle.return_value = can_handle
     d.detect.return_value = envs
+    # Stubs go through the per-detector detect() path, not the shared walk.
+    d.shared_walk = False
     return d
 
 
@@ -155,6 +157,22 @@ class TestScanner:
         scanner = Scanner(detectors=[_stub_detector("venv", [])])
         assert scanner.scan(tmp_path) == []
 
+    def test_shared_walk_detectors_run_once_with_progress(self, tmp_path: Path) -> None:
+        """Real fs-walk detectors go through the shared walk and fire on_progress."""
+        proj = tmp_path / "proj"
+        (proj / ".venv").mkdir(parents=True)
+        (proj / ".venv" / "pyvenv.cfg").write_text("home = /usr/bin\n")
+        (proj / "__pycache__").mkdir()
+        scanner = Scanner(types={"venv", "cache", "artifacts", "tox"})
+        progressed: list[str] = []
+        results = scanner.scan(
+            tmp_path, on_progress=lambda det, envs: progressed.append(det.name)
+        )
+        types = {e.type for e in results}
+        assert ".venv" in types
+        assert "__pycache__" in types
+        assert "venv" in progressed and "cache" in progressed
+
     def test_default_instantiates_all_detectors(self) -> None:
         """Scanner() with no args instantiates all default detectors."""
         scanner = Scanner()
@@ -214,6 +232,41 @@ class TestScannerAsync:
 
         results = asyncio.run(_collect())
         assert len(results) == 1
+
+    def test_scan_async_runs_shared_walk(self, tmp_path: Path) -> None:
+        """scan_async batches the fs-walk detectors through the shared walk."""
+        proj = tmp_path / "proj"
+        (proj / ".venv").mkdir(parents=True)
+        (proj / ".venv" / "pyvenv.cfg").write_text("home = /usr/bin\n")
+        (proj / "__pycache__").mkdir()
+        scanner = Scanner(types={"venv", "cache", "artifacts", "tox"})
+
+        async def _collect():
+            results = []
+            async for _det, envs in scanner.scan_async(tmp_path):
+                results.extend(envs)
+            return results
+
+        results = asyncio.run(_collect())
+        types = {e.type for e in results}
+        assert ".venv" in types
+        assert "__pycache__" in types
+
+    def test_scan_async_shared_walk_error_is_isolated(self, tmp_path: Path) -> None:
+        """A crash in the shared walk yields empties instead of propagating."""
+        scanner = Scanner(types={"venv"})
+        with patch.object(
+            Scanner, "_shared_walk_groups", side_effect=RuntimeError("boom")
+        ):
+
+            async def _collect():
+                results = []
+                async for _det, envs in scanner.scan_async(tmp_path):
+                    results.extend(envs)
+                return results
+
+            results = asyncio.run(_collect())
+        assert results == []
 
     def test_scan_async_deduplicates(self, tmp_path: Path) -> None:
         shared = tmp_path / "shared" / ".venv"

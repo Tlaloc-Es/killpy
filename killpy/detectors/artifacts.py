@@ -42,6 +42,7 @@ class ArtifactsDetector(AbstractDetector):
 
     name = "artifacts"
     always_available = True  # pure filesystem walk
+    shared_walk = True  # tree scan served by killpy.detectors._shared_walk
 
     def detect(self, path: Path) -> list[Environment]:
         envs: list[Environment] = []
