@@ -46,10 +46,13 @@ killpy list                               # list all detected environments
 killpy list --path ~/projects             # scan a specific path
 killpy list --type venv --type conda      # filter by type (repeatable)
 killpy list --older-than 90               # not modified in the last 90 days
+killpy list --sort date                   # sort by date (newest first)
+killpy list --sort name --reverse         # sort by name Z-A
 killpy list --json                        # output as a JSON array
 killpy list --json-stream                 # stream as NDJSON — one line per env
 killpy list --quiet                       # suppress progress output (scripts/CI)
 ```
+
 
 While scanning, `killpy list` shows a live progress indicator on **stderr** so you can see which detector is running. Stdout receives only the final output (table, JSON, or NDJSON), so pipes and redirections are never polluted. Use `--quiet` / `-q` to silence the progress indicator entirely (useful in scripts or CI).
 

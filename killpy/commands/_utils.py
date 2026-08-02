@@ -87,3 +87,39 @@ def filter_envs(
         result = [e for e in result if e.last_modified < cutoff]
 
     return result
+
+
+def sort_envs(
+    envs: list[Environment],
+    sort_by: str = "size",
+    reverse: bool = False,
+) -> list[Environment]:
+    """Sort a list of environments by *sort_by* key.
+
+    Parameters
+    ----------
+    envs:
+        List of environments to sort.
+    sort_by:
+        Key to sort by: ``"size"`` (bytes), ``"date"`` (last modified time),
+        or ``"name"`` (environment name). Case-insensitive.
+    reverse:
+        If ``True``, invert the default sort order for the chosen key.
+
+    Returns
+    -------
+    list[Environment]
+        A new list of sorted environments.
+    """
+    key = sort_by.lower()
+    if key == "size":
+        return sorted(envs, key=lambda e: e.size_bytes, reverse=not reverse)
+    elif key == "date":
+        return sorted(envs, key=lambda e: e.last_modified, reverse=not reverse)
+    elif key == "name":
+        return sorted(envs, key=lambda e: e.name.lower(), reverse=reverse)
+    else:
+        raise ValueError(
+            f"Invalid sort key: {sort_by!r}. Must be 'size', 'date', or 'name'."
+        )
+

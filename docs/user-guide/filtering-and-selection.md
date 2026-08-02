@@ -21,6 +21,17 @@ killpy delete --older-than 180 --dry-run
 
 This filter is based on the recorded last-modified timestamp (`st_mtime`) stored in each `Environment` object.
 
+## Sorting output
+
+The `list` command supports `--sort` (`size`, `date`, `name`) and `--reverse`:
+
+```bash
+killpy list --sort date                  # newest modified first
+killpy list --sort size --reverse        # smallest size first
+killpy list --sort name                  # alphabetical A-Z
+```
+
+
 ## Path filtering in the TUI
 
 Press `/` in the TUI to filter visible rows by path. The filter is a

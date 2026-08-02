@@ -368,6 +368,9 @@ class TestHelpOutput:
         assert result.exit_code == 0
         assert "--json" in result.output
         assert "--type" in result.output
+        assert "--sort" in result.output
+        assert "--reverse" in result.output
+
 
     def test_delete_help(self) -> None:
         runner = CliRunner()

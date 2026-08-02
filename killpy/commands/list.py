@@ -9,7 +9,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from killpy.commands._utils import filter_envs
+from killpy.commands._utils import filter_envs, sort_envs
 from killpy.files import format_size
 from killpy.models import Environment
 from killpy.scanner import Scanner
@@ -22,6 +22,8 @@ def _run_json_stream(
     older_than: int | None,
     quiet: bool,
     stderr_console: Console,
+    sort_by: str = "size",
+    reverse: bool = False,
 ) -> None:
     if not quiet:
         stderr_console.print("[dim]Scanning…[/dim]")
@@ -31,7 +33,9 @@ def _run_json_stream(
             stderr_console.print(
                 f"[dim]  {detector.name}[/dim] — [dim]{len(envs)} found[/dim]",
             )
-        for env in filter_envs(envs, types or None, older_than):
+        filtered = filter_envs(envs, types or None, older_than)
+        sorted_batch = sort_envs(filtered, sort_by, reverse)
+        for env in sorted_batch:
             click.echo(json.dumps(env.to_dict()))
 
     scanner.scan(path, on_progress=_progress)
@@ -104,6 +108,22 @@ def _print_table(envs: list, console: Console) -> None:
     help="Only show environments not modified in the last N days.",
 )
 @click.option(
+    "--sort",
+    "-s",
+    "sort_by",
+    type=click.Choice(["size", "date", "name"], case_sensitive=False),
+    default="size",
+    show_default=True,
+    help="Sort order for results (size, date, name).",
+)
+@click.option(
+    "--reverse",
+    "-r",
+    is_flag=True,
+    default=False,
+    help="Reverse the sort order.",
+)
+@click.option(
     "--json-stream",
     "as_json_stream",
     is_flag=True,
@@ -128,6 +148,8 @@ def list_cmd(
     path: Path,
     types: tuple[str, ...],
     older_than: int | None,
+    sort_by: str,
+    reverse: bool,
     as_json: bool,
     as_json_stream: bool,
     quiet: bool,
@@ -137,11 +159,14 @@ def list_cmd(
     stderr_console = Console(stderr=True)
 
     if as_json_stream:
-        _run_json_stream(scanner, path, types, older_than, quiet, stderr_console)
+        _run_json_stream(
+            scanner, path, types, older_than, quiet, stderr_console, sort_by, reverse
+        )
         return
 
     envs = _scan_with_progress(scanner, path, quiet, stderr_console)
     envs = filter_envs(envs, types or None, older_than)
+    envs = sort_envs(envs, sort_by, reverse)
 
     if as_json:
         click.echo(json.dumps([e.to_dict() for e in envs], indent=2))
@@ -152,3 +177,4 @@ def list_cmd(
         return
 
     _print_table(envs, Console())
+
