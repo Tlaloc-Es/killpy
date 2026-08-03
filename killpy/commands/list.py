@@ -9,17 +9,18 @@ import click
 from rich.console import Console
 from rich.table import Table
 
-from killpy.commands._utils import filter_envs, sort_envs
+from killpy.commands._utils import SIZE, filter_envs, sort_envs
 from killpy.files import format_size
 from killpy.models import Environment
 from killpy.scanner import Scanner
 
 
-def _run_json_stream(
+def _run_json_stream(  # noqa: PLR0913
     scanner: Scanner,
     path: Path,
     types: tuple[str, ...],
     older_than: int | None,
+    min_size: int | None,
     quiet: bool,
     stderr_console: Console,
 ) -> None:
@@ -34,7 +35,7 @@ def _run_json_stream(
             stderr_console.print(
                 f"[dim]  {detector.name}[/dim] — [dim]{len(envs)} found[/dim]",
             )
-        for env in filter_envs(envs, types or None, older_than):
+        for env in filter_envs(envs, types or None, older_than, min_size):
             click.echo(json.dumps(env.to_dict()))
 
     scanner.scan(path, on_progress=_progress)
@@ -123,6 +124,13 @@ def _print_table(envs: list, console: Console) -> None:
     help="Reverse the sort order.",
 )
 @click.option(
+    "--min-size",
+    type=SIZE,
+    default=None,
+    metavar="SIZE",
+    help="Only show environments at least this large (for example, 500MB or 1.5GB).",
+)
+@click.option(
     "--json-stream",
     "as_json_stream",
     is_flag=True,
@@ -149,6 +157,7 @@ def list_cmd(  # noqa: PLR0913 — click commands grow one parameter per option
     older_than: int | None,
     sort_by: str,
     reverse: bool,
+    min_size: int | None,
     as_json: bool,
     as_json_stream: bool,
     quiet: bool,
@@ -158,11 +167,13 @@ def list_cmd(  # noqa: PLR0913 — click commands grow one parameter per option
     stderr_console = Console(stderr=True)
 
     if as_json_stream:
-        _run_json_stream(scanner, path, types, older_than, quiet, stderr_console)
+        _run_json_stream(
+            scanner, path, types, older_than, min_size, quiet, stderr_console
+        )
         return
 
     envs = _scan_with_progress(scanner, path, quiet, stderr_console)
-    envs = filter_envs(envs, types or None, older_than)
+    envs = filter_envs(envs, types or None, older_than, min_size)
     envs = sort_envs(envs, sort_by, reverse)
 
     if as_json:

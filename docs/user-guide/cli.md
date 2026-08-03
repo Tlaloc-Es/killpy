@@ -51,6 +51,7 @@ killpy list                               # list all detected environments
 killpy list --path ~/projects             # scan a specific path
 killpy list --type venv --type conda      # filter by type (repeatable)
 killpy list --older-than 90               # not modified in the last 90 days
+killpy list --min-size 500MB              # at least 500 MB large
 killpy list --sort date                   # sort by date (newest first)
 killpy list --sort name --reverse         # sort by name Z-A
 killpy list --json                        # output as a JSON array
@@ -112,6 +113,9 @@ killpy find "fastapi>=0.100" --path ~/projects
 # Filter by environment type (repeatable)
 killpy find torch --type venv --type conda
 
+# Search only environments at least 1.5 GB large
+killpy find torch --min-size 1.5GB
+
 # Machine-readable output
 killpy find "numpy>=2" --json
 ```
@@ -131,6 +135,7 @@ killpy delete --dry-run                   # preview — nothing is deleted
 killpy delete --type venv                 # only a specific type
 killpy delete --type venv --type cache    # multiple types
 killpy delete --older-than 180 --yes      # delete stale envs, no prompt
+killpy delete --min-size 500MB --dry-run  # preview only large environments
 killpy delete --force                     # include in-use (⚠) environments
 killpy delete --path ~/projects
 ```
@@ -148,6 +153,7 @@ Use `stats` to aggregate counts and sizes by detected type.
 ```bash
 killpy stats
 killpy stats --path ~/projects
+killpy stats --min-size 500MB     # aggregate only large environments
 killpy stats --json
 killpy stats --history           # cumulative scan history
 ```
@@ -188,6 +194,8 @@ Usage: killpy doctor [OPTIONS]
 
 Options:
   --path DIRECTORY  Root directory to scan  [default: cwd]
+  --min-size SIZE   Only analyse environments at least this large (for example,
+                    500MB or 1.5GB).
   --all             Show all environments grouped by category
                     (HIGH / MEDIUM / LOW). Default shows only the top 5.
   --json            Output as JSON.
@@ -195,6 +203,10 @@ Options:
 ```
 
 ![killpy doctor](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/docs/gifs/doctor.gif)
+
+`--min-size` accepts case-insensitive binary size units (`B`, `KB`, `MB`, `GB`,
+or `TB`) and decimal values such as `1.5GB`. Invalid values fail with a usage
+error. The option is also available on `list`, `find`, `delete`, and `stats`.
 
 `doctor` analyses every detected virtual environment in two phases.
 

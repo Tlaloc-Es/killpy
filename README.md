@@ -221,6 +221,7 @@ The one-liners you will actually use:
 
 ```bash
 killpy list --json                        # every environment, machine-readable
+killpy list --min-size 500MB              # only environments worth reclaiming
 killpy delete --older-than 180 --yes      # remove stale envs, no prompt
 killpy doctor                             # health report — what is safe to delete
 killpy stats                              # disk usage breakdown by type

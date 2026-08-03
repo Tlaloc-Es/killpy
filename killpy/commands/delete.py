@@ -9,7 +9,7 @@ import click
 from rich.console import Console
 
 from killpy.cleaner import Cleaner, CleanerError
-from killpy.commands._utils import filter_envs, partition_in_use
+from killpy.commands._utils import SIZE, filter_envs, partition_in_use
 from killpy.files import format_size
 from killpy.hints import maybe_star_hint
 from killpy.intelligence.tracker import UsageTracker
@@ -41,6 +41,13 @@ from killpy.scanner import Scanner
     help="Only delete environments not modified in the last N days.",
 )
 @click.option(
+    "--min-size",
+    type=SIZE,
+    default=None,
+    metavar="SIZE",
+    help="Only delete environments at least this large (for example, 500MB or 1.5GB).",
+)
+@click.option(
     "--dry-run",
     is_flag=True,
     default=False,
@@ -59,10 +66,11 @@ from killpy.scanner import Scanner
     default=False,
     help="Also delete environments currently in use (flagged system-critical).",
 )
-def delete_cmd(
+def delete_cmd(  # noqa: PLR0913
     path: Path,
     types: tuple[str, ...],
     older_than: int | None,
+    min_size: int | None,
     dry_run: bool,
     yes: bool,
     force: bool,
@@ -78,7 +86,7 @@ def delete_cmd(
 
     scanner = Scanner(types=set(types) if types else None)
     envs = scanner.scan(path)
-    envs = filter_envs(envs, types or None, older_than)
+    envs = filter_envs(envs, types or None, older_than, min_size)
     envs = partition_in_use(envs, force, console)
 
     if not envs:

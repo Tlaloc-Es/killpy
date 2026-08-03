@@ -10,6 +10,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
+from killpy.commands._utils import SIZE, filter_envs
 from killpy.detectors import ALL_DETECTORS
 from killpy.files import format_size
 from killpy.intelligence import SuggestionEngine, UsageTracker, score_all
@@ -52,18 +53,26 @@ _ENV_TYPES: set[str] = {
     help="Output as JSON.",
 )
 @click.option(
+    "--min-size",
+    type=SIZE,
+    default=None,
+    metavar="SIZE",
+    help="Only analyse environments at least this large (for example, 500MB or 1.5GB).",
+)
+@click.option(
     "--all",
     "show_all",
     is_flag=True,
     default=False,
     help="Show all environments (MEDIUM and LOW included), not just the top offenders.",
 )
-def doctor_cmd(path: Path, as_json: bool, show_all: bool) -> None:
+def doctor_cmd(path: Path, as_json: bool, min_size: int | None, show_all: bool) -> None:
     """Analyse environments and show actionable deletion recommendations."""
     console = Console()
 
     scanner = Scanner(types=_ENV_TYPES)
     envs = scanner.scan(path)
+    envs = filter_envs(envs, None, None, min_size)
 
     if not envs:
         if as_json:

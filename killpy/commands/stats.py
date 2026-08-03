@@ -10,6 +10,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
+from killpy.commands._utils import SIZE, filter_envs
 from killpy.files import format_size
 from killpy.intelligence.tracker import UsageTracker
 from killpy.scanner import Scanner
@@ -30,12 +31,19 @@ from killpy.scanner import Scanner
     help="Output as JSON.",
 )
 @click.option(
+    "--min-size",
+    type=SIZE,
+    default=None,
+    metavar="SIZE",
+    help="Only include environments at least this large (for example, 500MB or 1.5GB).",
+)
+@click.option(
     "--history",
     is_flag=True,
     default=False,
     help="Show cumulative scan history from ~/.killpy/history.json.",
 )
-def stats_cmd(path: Path, as_json: bool, history: bool) -> None:
+def stats_cmd(path: Path, as_json: bool, min_size: int | None, history: bool) -> None:
     """Show disk-usage statistics grouped by environment type."""
     if history:
         _show_history(as_json)
@@ -43,6 +51,7 @@ def stats_cmd(path: Path, as_json: bool, history: bool) -> None:
 
     scanner = Scanner()
     envs = scanner.scan(path)
+    envs = filter_envs(envs, None, None, min_size)
 
     # Aggregate by type
     by_type: dict[str, dict] = defaultdict(lambda: {"count": 0, "size_bytes": 0})

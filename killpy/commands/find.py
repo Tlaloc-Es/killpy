@@ -11,7 +11,7 @@ from packaging.version import InvalidVersion
 from rich.console import Console
 from rich.table import Table
 
-from killpy.commands._utils import filter_envs
+from killpy.commands._utils import SIZE, filter_envs
 from killpy.scanner import Scanner
 
 # ---------------------------------------------------------------------------
@@ -124,6 +124,13 @@ def package_version_match(
     ),
 )
 @click.option(
+    "--min-size",
+    type=SIZE,
+    default=None,
+    metavar="SIZE",
+    help="Only search environments at least this large (for example, 500MB or 1.5GB).",
+)
+@click.option(
     "--json",
     "as_json",
     is_flag=True,
@@ -134,6 +141,7 @@ def find_cmd(
     package: str,
     path: Path,
     types: tuple[str, ...],
+    min_size: int | None,
     as_json: bool,
 ) -> None:
     """Find environments that have PACKAGE installed.
@@ -154,7 +162,7 @@ def find_cmd(
 
     scanner = Scanner(types=set(types) if types else None)
     envs = scanner.scan(path)
-    envs = filter_envs(envs, types or None, None)
+    envs = filter_envs(envs, types or None, None, min_size)
 
     matches: list[tuple] = []  # (Environment, version_string)
     for env in envs:

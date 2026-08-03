@@ -104,6 +104,21 @@ class TestListCommand:
         result = self._run(["--type", "venv"], envs=envs)
         assert "a" in result.output
 
+    def test_min_size_filters_and_accepts_decimal_units(self) -> None:
+        envs = [
+            _env(name="small", size=1 << 30),
+            _env(name="large", size=2 << 30),
+        ]
+        result = self._run(["--min-size", "1.5GB"], envs=envs)
+        assert result.exit_code == 0
+        assert "large" in result.output
+        assert "small" not in result.output
+
+    def test_invalid_min_size_is_a_usage_error(self) -> None:
+        result = self._run(["--min-size", "lots"])
+        assert result.exit_code == 2
+        assert "must be a size" in result.output
+
 
 # ---------------------------------------------------------------------------
 # killpy stats
@@ -152,6 +167,13 @@ class TestStatsCommand:
         result = self._run(["--json"], envs=envs)
         data = json.loads(result.output)
         assert data["total_size_bytes"] == 2000
+
+    def test_min_size_filters_aggregates(self) -> None:
+        envs = [_env(name="small", size=1023), _env(name="large", size=1024)]
+        result = self._run(["--min-size", "1KB", "--json"], envs=envs)
+        data = json.loads(result.output)
+        assert data["total_count"] == 1
+        assert data["total_size_bytes"] == 1024
 
 
 # ---------------------------------------------------------------------------
@@ -298,6 +320,13 @@ class TestDeleteFilters:
         assert result.exit_code == 0
         assert "Deleted old" in result.output
 
+    def test_min_size_filter(self) -> None:
+        envs = [_env(name="small", size=1023), _env(name="large", size=1024)]
+        result = self._run_delete(["--min-size", "1KB", "--yes"], envs)
+        assert result.exit_code == 0
+        assert "Deleted large" in result.output
+        assert "Deleted small" not in result.output
+
     def test_cleaner_error_shows_message_and_exits_nonzero(self) -> None:
         runner = CliRunner()
         env = _env(name="broken")
@@ -399,8 +428,8 @@ class TestDoctorCommand:
             patch("killpy.commands.doctor.score_all") as mock_score,
         ):
             mock_scanner.return_value.scan.return_value = envs
-            # score_all returns ScoredEnvironment stubs; keep it simple
-            scored = [
+            # score_all returns ScoredEnvironment stubs for the filtered input.
+            mock_score.side_effect = lambda filtered, **_kwargs: [
                 ScoredEnvironment(
                     env=e,
                     score=0.8,
@@ -410,9 +439,8 @@ class TestDoctorCommand:
                     is_orphan=True,
                     num_packages=0,
                 )
-                for e in envs
+                for e in filtered
             ]
-            mock_score.return_value = scored
             result = runner.invoke(cli, ["doctor", "--path", "/tmp"] + args)
         return result
 
@@ -438,6 +466,12 @@ class TestDoctorCommand:
         result = self._run([], envs=envs)
         assert result.exit_code == 0
         assert "Health" in result.output or "Offender" in result.output
+
+    def test_min_size_filters_before_scoring(self) -> None:
+        envs = [_env(name="small", size=1023), _env(name="large", size=1024)]
+        result = self._run(["--min-size", "1KB", "--json"], envs=envs)
+        assert result.exit_code == 0
+        assert json.loads(result.output)["total_environments"] == 1
 
     def test_doctor_help(self) -> None:
         runner = CliRunner()

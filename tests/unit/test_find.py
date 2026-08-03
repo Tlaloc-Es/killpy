@@ -248,3 +248,11 @@ class TestFindCommand:
     def test_no_match_exits_cleanly(self):
         result = self._run(["numpy==99.0"], [], {})
         assert result.exit_code == 0
+
+    def test_min_size_filters_before_package_lookup(self):
+        env = _env(Path("/proj/.venv"))
+        result = self._run(
+            ["requests", "--min-size", "2KB"], [env], {"requests": "2.31.0"}
+        )
+        assert result.exit_code == 0
+        assert "No environments found" in result.output
