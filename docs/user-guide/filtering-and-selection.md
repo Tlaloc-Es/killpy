@@ -1,6 +1,6 @@
 ---
 title: Filtering and selection — target exactly what to delete
-description: Exclude paths, filter by age with --older-than, and use the TUI's live filter and multi-select to delete exactly the rows you intend.
+description: Exclude paths, filter by age with --older-than or by size with --min-size, and use the TUI's live filter and multi-select to delete exactly the rows you intend.
 ---
 
 # Filtering and Selection
@@ -25,6 +25,19 @@ killpy delete --older-than 180 --dry-run
 ```
 
 This filter is based on the recorded last-modified timestamp (`st_mtime`) stored in each `Environment` object.
+
+## Filtering by size
+
+The `list`, `find`, `delete`, `stats` and `doctor` commands support `--min-size`, which keeps only environments at least that large:
+
+```bash
+killpy list --min-size 500MB             # only what is worth reclaiming
+killpy delete --min-size 1GB --dry-run   # preview the big ones
+```
+
+Sizes take a unit (`B`, `KB`, `MB`, `GB` or `TB`, case-insensitive) and accept decimals such as `1.5GB`. Units are binary — `1KB` is 1024 bytes — so a threshold matches exactly what the tool prints in its `Size` column. A value without a unit is a usage error.
+
+`killpy stats --history` reports stored totals rather than a fresh scan, so scan filters like `--min-size` and `--path` do not apply to it.
 
 ## Sorting output
 

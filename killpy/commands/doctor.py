@@ -72,7 +72,6 @@ def doctor_cmd(path: Path, as_json: bool, min_size: int | None, show_all: bool) 
 
     scanner = Scanner(types=_ENV_TYPES)
     envs = scanner.scan(path)
-    envs = filter_envs(envs, None, None, min_size)
 
     if not envs:
         if as_json:
@@ -82,6 +81,10 @@ def doctor_cmd(path: Path, as_json: bool, min_size: int | None, show_all: bool) 
         else:
             console.print("[yellow]No environments found.[/yellow]")
         return
+
+    # Filtering happens after the empty-scan check so that a filter matching
+    # nothing still reports the full JSON shape instead of the degenerate one.
+    envs = filter_envs(envs, None, None, min_size)
 
     scored_envs = score_all(envs, run_git=True)
     engine = SuggestionEngine()

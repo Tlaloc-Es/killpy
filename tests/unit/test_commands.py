@@ -9,12 +9,16 @@ from __future__ import annotations
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
+import click
+import pytest
 from click.testing import CliRunner, Result
 
 from killpy.__main__ import cli
 from killpy.cleaner import CleanerError
+from killpy.commands._utils import SIZE
 from killpy.intelligence.tracker import UsageTracker
 from killpy.models import Environment, ScoredEnvironment
 
@@ -50,6 +54,47 @@ def _mock_scanner(envs: list[Environment]):
         patch("killpy.commands.list.Scanner", mock),
         patch("killpy.commands.stats.Scanner", mock),
     )
+
+
+# ---------------------------------------------------------------------------
+# --min-size parsing
+# ---------------------------------------------------------------------------
+
+
+class TestSizeParamType:
+    def test_accepts_an_already_converted_value(self) -> None:
+        # click hands the type its own output back in some flows (defaults,
+        # re-prompts), so conversion has to be idempotent.
+        assert SIZE.convert(4096, None, None) == 4096
+
+    def test_parses_every_supported_unit(self) -> None:
+        assert SIZE.convert("512B", None, None) == 512
+        assert SIZE.convert("2KB", None, None) == 2 << 10
+        assert SIZE.convert("1.5GB", None, None) == int(1.5 * (1 << 30))
+        assert SIZE.convert("1TB", None, None) == 1 << 40
+
+    def test_is_case_and_whitespace_insensitive(self) -> None:
+        assert SIZE.convert(" 4 mb ", None, None) == 4 << 20
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "lots",  # not a number at all
+            "1000",  # no unit
+            "-5MB",  # negative
+            "",  # empty
+            "1,5GB",  # comma decimal
+            "infMB",  # float sentinel
+        ],
+    )
+    def test_rejects_invalid_sizes(self, value: str) -> None:
+        with pytest.raises(click.UsageError):
+            SIZE.convert(value, None, None)
+
+    def test_huge_values_do_not_overflow(self) -> None:
+        # A float mantissa turns 309+ digits into infinity and int() then
+        # raises; an absurd threshold should just match nothing instead.
+        assert SIZE.convert("9" * 309 + "MB", None, None) > 10**300
 
 
 # ---------------------------------------------------------------------------
@@ -118,6 +163,27 @@ class TestListCommand:
         result = self._run(["--min-size", "lots"])
         assert result.exit_code == 2
         assert "must be a size" in result.output
+
+    def test_min_size_applies_to_the_streamed_output(self) -> None:
+        # --json-stream filters inside the per-detector callback, a separate
+        # call site from the batch path above.
+        batch = [_env(name="small", size=1023), _env(name="large", size=4096)]
+
+        def fake_scan(path, on_progress=None):
+            on_progress(SimpleNamespace(name="venv"), batch)
+            return batch
+
+        runner = CliRunner()
+        with patch("killpy.commands.list.Scanner") as mock_cls:
+            mock_cls.return_value.scan.side_effect = fake_scan
+            result = runner.invoke(
+                cli,
+                ["list", "--path", "/tmp", "--json-stream", "-q", "--min-size", "1KB"],
+            )
+
+        assert result.exit_code == 0
+        names = [json.loads(line)["name"] for line in result.output.splitlines()]
+        assert names == ["large"]
 
 
 # ---------------------------------------------------------------------------

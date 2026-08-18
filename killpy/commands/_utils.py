@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 import click
 from rich.console import Console
@@ -50,9 +51,15 @@ class SizeParamType(click.ParamType):
             return value
         match = _SIZE_PATTERN.fullmatch(value.strip())
         if match is None:
-            self.fail("must be a size such as 500MB, 1.5GB, or 200KB", param, ctx)
+            self.fail(
+                "must be a size with a unit, such as 500MB, 1.5GB, or 200KB",
+                param,
+                ctx,
+            )
         amount, unit = match.groups()
-        return int(float(amount) * _SIZE_UNITS[unit.lower()])
+        # Decimal rather than float: a mantissa of 309+ digits overflows a
+        # float to infinity, and int() then raises instead of failing cleanly.
+        return int(Decimal(amount) * _SIZE_UNITS[unit.lower()])
 
 
 SIZE = SizeParamType()
