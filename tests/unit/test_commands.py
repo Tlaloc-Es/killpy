@@ -371,7 +371,6 @@ class TestHelpOutput:
         assert "--sort" in result.output
         assert "--reverse" in result.output
 
-
     def test_delete_help(self) -> None:
         runner = CliRunner()
         result = runner.invoke(cli, ["delete", "--help"])

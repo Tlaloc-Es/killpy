@@ -53,7 +53,6 @@ killpy list --json-stream                 # stream as NDJSON — one line per en
 killpy list --quiet                       # suppress progress output (scripts/CI)
 ```
 
-
 While scanning, `killpy list` shows a live progress indicator on **stderr** so you can see which detector is running. Stdout receives only the final output (table, JSON, or NDJSON), so pipes and redirections are never polluted. Use `--quiet` / `-q` to silence the progress indicator entirely (useful in scripts or CI).
 
 The **Path** column mirrors the form of `--path`: a relative `--path` produces relative paths, an absolute one produces absolute paths (long paths are truncated to keep rows compact). The full absolute path is always available via `--json` / `--json-stream` in the `absolute_path` field.
@@ -76,7 +75,7 @@ The **Path** column mirrors the form of `--path`: a relative `--path` produces r
 ]
 ```
 
-`--json-stream` emits NDJSON progressively while the scan runs — ideal for piping into `jq` or processing in scripts before the full scan completes:
+`--json-stream` emits NDJSON progressively while the scan runs — ideal for piping into `jq` or processing in scripts before the full scan completes. Note that `--sort` applies to the table and `--json` output only: the stream always emits in detection order, since a global sort would require buffering the whole scan.
 
 ```bash
 killpy list --json-stream --path ~ | jq 'select(.type == "conda") | .size_human'

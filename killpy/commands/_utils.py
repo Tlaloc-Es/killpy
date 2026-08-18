@@ -122,4 +122,3 @@ def sort_envs(
         raise ValueError(
             f"Invalid sort key: {sort_by!r}. Must be 'size', 'date', or 'name'."
         )
-

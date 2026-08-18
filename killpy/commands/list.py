@@ -22,9 +22,10 @@ def _run_json_stream(
     older_than: int | None,
     quiet: bool,
     stderr_console: Console,
-    sort_by: str = "size",
-    reverse: bool = False,
 ) -> None:
+    # Streaming output deliberately ignores --sort: batches are emitted the
+    # moment each detector finishes, and a global sort would require buffering
+    # the entire scan, defeating the point of --json-stream.
     if not quiet:
         stderr_console.print("[dim]Scanning…[/dim]")
 
@@ -33,9 +34,7 @@ def _run_json_stream(
             stderr_console.print(
                 f"[dim]  {detector.name}[/dim] — [dim]{len(envs)} found[/dim]",
             )
-        filtered = filter_envs(envs, types or None, older_than)
-        sorted_batch = sort_envs(filtered, sort_by, reverse)
-        for env in sorted_batch:
+        for env in filter_envs(envs, types or None, older_than):
             click.echo(json.dumps(env.to_dict()))
 
     scanner.scan(path, on_progress=_progress)
@@ -144,7 +143,7 @@ def _print_table(envs: list, console: Console) -> None:
     default=False,
     help="Suppress progress messages (useful in scripts/pipelines).",
 )
-def list_cmd(
+def list_cmd(  # noqa: PLR0913 — click commands grow one parameter per option
     path: Path,
     types: tuple[str, ...],
     older_than: int | None,
@@ -159,9 +158,7 @@ def list_cmd(
     stderr_console = Console(stderr=True)
 
     if as_json_stream:
-        _run_json_stream(
-            scanner, path, types, older_than, quiet, stderr_console, sort_by, reverse
-        )
+        _run_json_stream(scanner, path, types, older_than, quiet, stderr_console)
         return
 
     envs = _scan_with_progress(scanner, path, quiet, stderr_console)
@@ -177,4 +174,3 @@ def list_cmd(
         return
 
     _print_table(envs, Console())
-

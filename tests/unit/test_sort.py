@@ -3,8 +3,8 @@
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
-
 
 import pytest
 from click.testing import CliRunner
@@ -112,7 +112,9 @@ class TestListCommandSorting:
         runner = CliRunner()
         with patch("killpy.commands.list.Scanner") as mock_scanner:
             mock_scanner.return_value.scan.return_value = envs
-            result = runner.invoke(cli, ["list", "--json", "--sort", "size", "--reverse"])
+            result = runner.invoke(
+                cli, ["list", "--json", "--sort", "size", "--reverse"]
+            )
 
         assert result.exit_code == 0
         names = [item["name"] for item in json.loads(result.output)]
@@ -162,3 +164,26 @@ class TestListCommandSorting:
         assert result.exit_code == 0
         names = [item["name"] for item in json.loads(result.output)]
         assert names == ["old", "medium", "newest"]
+
+    def test_list_json_stream_keeps_detection_order(self) -> None:
+        """--sort must not reorder the stream: batches are emitted as detected,
+        so a globally sorted stream is impossible without buffering the scan."""
+        batch_small = [_make_env("small-venv", 100, 1)]
+        batch_big = [_make_env("huge-artifact", 9000, 1)]
+
+        def fake_scan(path, on_progress=None):
+            on_progress(SimpleNamespace(name="venv"), batch_small)
+            on_progress(SimpleNamespace(name="artifacts"), batch_big)
+            return batch_small + batch_big
+
+        runner = CliRunner()
+        with patch("killpy.commands.list.Scanner") as mock_scanner:
+            mock_scanner.return_value.scan.side_effect = fake_scan
+            result = runner.invoke(
+                cli, ["list", "--json-stream", "--sort", "size", "--quiet"]
+            )
+
+        assert result.exit_code == 0
+        lines = result.output.strip().splitlines()
+        names = [json.loads(line)["name"] for line in lines]
+        assert names == ["small-venv", "huge-artifact"]

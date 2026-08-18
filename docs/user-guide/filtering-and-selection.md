@@ -31,6 +31,7 @@ killpy list --sort size --reverse        # smallest size first
 killpy list --sort name                  # alphabetical A-Z
 ```
 
+Sorting applies to the table and `--json` output. `--json-stream` always emits in detection order — results stream out as each detector finishes.
 
 ## Path filtering in the TUI
 
