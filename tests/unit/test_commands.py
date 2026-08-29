@@ -73,6 +73,15 @@ class TestSizeParamType:
         assert SIZE.convert("1.5GB", None, None) == int(1.5 * (1 << 30))
         assert SIZE.convert("1TB", None, None) == 1 << 40
 
+    def test_accepts_binary_unit_spellings(self) -> None:
+        # KiB/MiB/GiB/TiB are pedantically correct spellings of the same
+        # binary sizes the short forms already use (1KB == 1KiB == 1024 bytes).
+        assert SIZE.convert("2KiB", None, None) == 2 << 10
+        assert SIZE.convert("1.5MiB", None, None) == int(1.5 * (1 << 20))
+        assert SIZE.convert("3GiB", None, None) == 3 << 30
+        assert SIZE.convert("1TiB", None, None) == 1 << 40
+        assert SIZE.convert(" 4 mib ", None, None) == 4 << 20
+
     def test_is_case_and_whitespace_insensitive(self) -> None:
         assert SIZE.convert(" 4 mb ", None, None) == 4 << 20
 

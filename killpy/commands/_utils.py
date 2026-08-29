@@ -37,8 +37,13 @@ _SIZE_UNITS = {
     "mb": 1 << 20,
     "gb": 1 << 30,
     "tb": 1 << 40,
+    # Binary-unit spellings (KiB/MiB/GiB/TiB) resolve to the same binary sizes.
+    "kib": 1 << 10,
+    "mib": 1 << 20,
+    "gib": 1 << 30,
+    "tib": 1 << 40,
 }
-_SIZE_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*([kmgt]?b)", re.IGNORECASE)
+_SIZE_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*([kmgt]?i?b)", re.IGNORECASE)
 
 
 class SizeParamType(click.ParamType):
