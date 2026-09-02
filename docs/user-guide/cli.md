@@ -159,6 +159,8 @@ killpy stats --history           # cumulative scan history
 ```
 
 The `--history` flag reads from the tracker database (`~/.killpy/history.json`) and shows aggregated totals across all past scans and deletions — useful to see how much space has been reclaimed over time.
+Because history is already aggregated from previous scans, scan filters such as
+`--min-size` cannot be combined with `--history`.
 
 Example output:
 

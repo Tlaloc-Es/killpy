@@ -46,6 +46,8 @@ from killpy.scanner import Scanner
 def stats_cmd(path: Path, as_json: bool, min_size: int | None, history: bool) -> None:
     """Show disk-usage statistics grouped by environment type."""
     if history:
+        if min_size is not None:
+            raise click.UsageError("--min-size cannot be used with --history")
         _show_history(as_json)
         return
 
