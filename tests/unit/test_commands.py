@@ -241,6 +241,12 @@ class TestStatsCommand:
         assert data["total_count"] == 1
         assert data["total_size_bytes"] == 1024
 
+    def test_min_size_rejected_with_history(self) -> None:
+        result = self._run(["--history", "--min-size", "1KB"])
+
+        assert result.exit_code != 0
+        assert "--min-size cannot be used with --history" in result.output
+
 
 # ---------------------------------------------------------------------------
 # killpy delete
