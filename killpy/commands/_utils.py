@@ -34,15 +34,20 @@ _TYPE_ALIASES: dict[str, frozenset[str]] = {
 _SIZE_UNITS = {
     "b": 1,
     "kb": 1 << 10,
+    "kib": 1 << 10,
     "mb": 1 << 20,
+    "mib": 1 << 20,
     "gb": 1 << 30,
+    "gib": 1 << 30,
     "tb": 1 << 40,
+    "tib": 1 << 40,
 }
-_SIZE_PATTERN = re.compile(r"(\d+(?:\.\d+)?)\s*([kmgt]?b)", re.IGNORECASE)
+# ASCII digits only: \d is Unicode-aware and would accept non-ASCII digits.
+_SIZE_PATTERN = re.compile(r"([0-9]+(?:\.[0-9]+)?)\s*([kmgt]i?b|b)", re.IGNORECASE)
 
 
 class SizeParamType(click.ParamType):
-    """Convert human-readable byte sizes such as ``500MB`` or ``1.5GB``."""
+    """Convert human-readable byte sizes such as ``500MB``, ``1.5GiB``."""
 
     name = "SIZE"
 
@@ -52,7 +57,7 @@ class SizeParamType(click.ParamType):
         match = _SIZE_PATTERN.fullmatch(value.strip())
         if match is None:
             self.fail(
-                "must be a size with a unit, such as 500MB, 1.5GB, or 200KB",
+                "must be a size with a unit, such as 500MB, 1.5GiB, or 200KB",
                 param,
                 ctx,
             )

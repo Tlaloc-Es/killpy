@@ -204,9 +204,10 @@ Options:
 
 ![killpy doctor](https://raw.githubusercontent.com/Tlaloc-Es/killpy/master/docs/gifs/doctor.gif)
 
-`--min-size` accepts case-insensitive binary size units (`B`, `KB`, `MB`, `GB`,
-or `TB`) and decimal values such as `1.5GB`. Invalid values fail with a usage
+`--min-size` accepts case-insensitive binary size units (`B`, `KB`/`KiB`, `MB`/`MiB`, `GB`/`GiB`,
+or `TB`/`TiB`) and decimal values such as `1.5GB`. Invalid values fail with a usage
 error. The option is also available on `list`, `find`, `delete`, and `stats`.
+`stats --history` cannot be combined with `--min-size` or `--path`.
 
 `doctor` analyses every detected virtual environment in two phases.
 

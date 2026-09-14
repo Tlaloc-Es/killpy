@@ -70,8 +70,11 @@ class TestSizeParamType:
     def test_parses_every_supported_unit(self) -> None:
         assert SIZE.convert("512B", None, None) == 512
         assert SIZE.convert("2KB", None, None) == 2 << 10
+        assert SIZE.convert("2KiB", None, None) == 2 << 10
         assert SIZE.convert("1.5GB", None, None) == int(1.5 * (1 << 30))
+        assert SIZE.convert("1.5GiB", None, None) == int(1.5 * (1 << 30))
         assert SIZE.convert("1TB", None, None) == 1 << 40
+        assert SIZE.convert("1TiB", None, None) == 1 << 40
 
     def test_is_case_and_whitespace_insensitive(self) -> None:
         assert SIZE.convert(" 4 mb ", None, None) == 4 << 20
@@ -85,6 +88,7 @@ class TestSizeParamType:
             "",  # empty
             "1,5GB",  # comma decimal
             "infMB",  # float sentinel
+            "٥MB",  # non-ASCII digits
         ],
     )
     def test_rejects_invalid_sizes(self, value: str) -> None:
@@ -240,6 +244,20 @@ class TestStatsCommand:
         data = json.loads(result.output)
         assert data["total_count"] == 1
         assert data["total_size_bytes"] == 1024
+
+    def test_history_rejects_min_size(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["stats", "--history", "--min-size", "1MB"])
+        assert result.exit_code == 2
+        assert "--history" in result.output
+        assert "--min-size" in result.output
+
+    def test_history_rejects_explicit_path(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(cli, ["stats", "--history", "--path", "/tmp"])
+        assert result.exit_code == 2
+        assert "--history" in result.output
+        assert "--path" in result.output
 
 
 # ---------------------------------------------------------------------------

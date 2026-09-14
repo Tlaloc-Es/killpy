@@ -1,3 +1,9 @@
+## Unreleased
+
+### Fix
+
+- **min-size**: accept KiB/MiB/GiB/TiB spellings, reject non-ASCII digits, and error when `stats --history` is combined with `--min-size` or `--path`
+
 ## 1.3.0 (2026-08-18)
 
 ### Feat

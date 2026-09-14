@@ -46,17 +46,9 @@ _ENV_TYPES: set[str] = {
     help="Root directory to scan.",
 )
 @click.option(
-    "--json",
-    "as_json",
-    is_flag=True,
-    default=False,
-    help="Output as JSON.",
-)
-@click.option(
     "--min-size",
     type=SIZE,
     default=None,
-    metavar="SIZE",
     help="Only analyse environments at least this large (for example, 500MB or 1.5GB).",
 )
 @click.option(
@@ -65,6 +57,13 @@ _ENV_TYPES: set[str] = {
     is_flag=True,
     default=False,
     help="Show all environments (MEDIUM and LOW included), not just the top offenders.",
+)
+@click.option(
+    "--json",
+    "as_json",
+    is_flag=True,
+    default=False,
+    help="Output as JSON.",
 )
 def doctor_cmd(path: Path, as_json: bool, min_size: int | None, show_all: bool) -> None:
     """Analyse environments and show actionable deletion recommendations."""

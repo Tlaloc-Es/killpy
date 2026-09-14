@@ -108,6 +108,12 @@ def _print_table(envs: list, console: Console) -> None:
     help="Only show environments not modified in the last N days.",
 )
 @click.option(
+    "--min-size",
+    type=SIZE,
+    default=None,
+    help="Only show environments at least this large (for example, 500MB or 1.5GB).",
+)
+@click.option(
     "--sort",
     "-s",
     "sort_by",
@@ -122,13 +128,6 @@ def _print_table(envs: list, console: Console) -> None:
     is_flag=True,
     default=False,
     help="Reverse the sort order.",
-)
-@click.option(
-    "--min-size",
-    type=SIZE,
-    default=None,
-    metavar="SIZE",
-    help="Only show environments at least this large (for example, 500MB or 1.5GB).",
 )
 @click.option(
     "--json-stream",
