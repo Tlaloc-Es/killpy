@@ -363,7 +363,7 @@ ______________________________________________________________________
 
 ```yaml
 - repo: https://github.com/Tlaloc-Es/killpy
-  rev: 1.3.0
+  rev: 1.3.1
   hooks:
     - id: killpy                  # remove __pycache__ on every commit
     - id: killpy-clean-caches     # also removes .mypy_cache, .pytest_cache, .ruff_cache
@@ -388,7 +388,7 @@ Typical minimal setup (safe for daily use):
 
 ```yaml
 - repo: https://github.com/Tlaloc-Es/killpy
-  rev: 1.3.0
+  rev: 1.3.1
   hooks:
     - id: killpy
 ```

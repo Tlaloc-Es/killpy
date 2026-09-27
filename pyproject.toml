@@ -1,6 +1,6 @@
 [project]
 name = "killpy"
-version = "1.3.0"
+version = "1.3.1"
 description = "npkill for Python — find and delete unused Python environments (.venv, conda, poetry, pipenv, pipx, pyenv, uv, hatch, tox) and caches to free disk space, from a fast terminal UI or a single CLI command."
 readme = "README.md"
 keywords = [
