@@ -25,6 +25,8 @@ def get_total_size(path: Path) -> int:
 
 def format_size(size_bytes: int) -> str:
     """Return *size_bytes* as a human-readable string (GB / MB / KB / bytes)."""
+    if size_bytes == 1:
+        return "1 byte"
     if size_bytes >= 1 << 30:
         return f"{size_bytes / (1 << 30):.2f} GB"
     elif size_bytes >= 1 << 20:
