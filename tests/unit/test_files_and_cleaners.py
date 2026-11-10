@@ -87,6 +87,9 @@ class TestFormatSize:
         assert format_size(512) == "512 bytes"
         assert format_size(1023) == "1023 bytes"
 
+    def test_singular_byte(self) -> None:
+        assert format_size(1) == "1 byte"
+
     def test_kilobytes(self) -> None:
         assert format_size(1024) == "1.00 KB"
         assert format_size(2048) == "2.00 KB"
